@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
 import { isValidEmail } from "@/lib/utils";
+import { issueAndSendVerification } from "@/lib/verification";
 
 // POST /api/auth/signup — 회원가입 (docs/04_API_SPEC.md)
 export async function POST(req: NextRequest) {
@@ -43,5 +44,17 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ userId: user.id }, { status: 201 });
+  // 인증 메일 발송. 발송에 실패해도 가입은 유지하고, 재발송으로 복구할 수 있다.
+  let verificationSent = true;
+  try {
+    await issueAndSendVerification(user.id, user.email);
+  } catch (err) {
+    verificationSent = false;
+    console.error("인증 메일 발송 실패:", err);
+  }
+
+  return NextResponse.json(
+    { userId: user.id, verificationSent },
+    { status: 201 },
+  );
 }

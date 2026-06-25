@@ -18,13 +18,40 @@ enum TranslationStatus {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  nickname     String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  works        Work[]
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String? // 소셜 전용 계정은 비밀번호가 없다.
+  nickname      String
+  image         String? // 제공자 아바타 (선택)
+  emailVerified DateTime? // null = 미인증
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  works         Work[]
+  accounts      OAuthAccount[]
+  verificationTokens EmailVerificationToken[]
+}
+
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String // "google" | "kakao" | "naver"
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique // 원본 토큰은 메일 링크로만 전달, DB엔 SHA-256 해시 저장
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Work {

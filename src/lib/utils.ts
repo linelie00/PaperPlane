@@ -10,11 +10,21 @@ export function generatePublicSlug(): string {
   return randomBytes(12).toString("base64url");
 }
 
+// 예측 불가능한 임의 토큰을 생성한다. (이메일 인증, OAuth state 등)
+export function generateToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+// 값을 SHA-256으로 해시한다. 원본 대신 해시만 저장할 때 사용한다.
+export function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
 // 개인정보 보호를 위해 IP는 해시 처리하여 저장한다. (docs/05_DB_SCHEMA.md)
 export function hashIp(ip: string | null | undefined): string | null {
   if (!ip) return null;
   const salt = process.env.AUTH_SECRET ?? "paperplane";
-  return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
+  return sha256(`${salt}:${ip}`);
 }
 
 // 댓글 입력의 XSS 방지를 위해 HTML 태그를 제거한다. (docs/04_API_SPEC.md)

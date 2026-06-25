@@ -2,19 +2,25 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
+import { SocialButtons } from "@/components/auth/SocialButtons";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // 가입 완료 후 안내 상태
+  const [done, setDone] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(true);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">(
+    "idle",
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,12 +43,67 @@ export default function SignupPage() {
     });
 
     if (res.ok) {
-      router.push("/login");
+      const data = await res.json().catch(() => null);
+      setVerificationSent(data?.verificationSent !== false);
+      setDone(true);
     } else {
       const data = await res.json().catch(() => null);
       setError(data?.error?.message ?? "회원가입에 실패했습니다.");
       setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    setResendState("sending");
+    await fetch("/api/auth/resend-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    setResendState("sent");
+  }
+
+  if (done) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-5 py-12">
+        <Card className="w-full max-w-md text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-sky-pale text-2xl">
+            ✉️
+          </div>
+          <h1 className="text-2xl font-extrabold text-ink-main">
+            인증 메일을 보냈어요
+          </h1>
+          <p className="mt-2 text-sm text-ink-sub">
+            <span className="font-semibold text-ink-main">{email}</span> 으로
+            인증 메일을 보냈어요.
+            <br />
+            메일의 링크를 눌러 인증을 완료하면 로그인할 수 있어요.
+          </p>
+
+          {!verificationSent && (
+            <p className="mt-4 rounded-xl bg-error/10 px-4 py-3 text-sm font-medium text-error">
+              메일 발송에 실패했어요. 아래에서 다시 보내주세요.
+            </p>
+          )}
+
+          <div className="mt-6 flex flex-col gap-3">
+            <Button type="button" onClick={handleResend} disabled={resendState !== "idle"}>
+              {resendState === "sending"
+                ? "보내는 중…"
+                : resendState === "sent"
+                  ? "다시 보냈어요"
+                  : "인증 메일 다시 보내기"}
+            </Button>
+            <Link
+              href="/login"
+              className="text-sm font-bold text-plane-dark"
+            >
+              로그인 화면으로
+            </Link>
+          </div>
+        </Card>
+      </main>
+    );
   }
 
   return (
@@ -101,7 +162,15 @@ export default function SignupPage() {
           </Button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-ink-sub">
+        <div className="my-6 flex items-center gap-3 text-xs text-ink-sub">
+          <span className="h-px flex-1 bg-gray-200" />
+          간편 회원가입
+          <span className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        <SocialButtons />
+
+        <p className="mt-6 text-center text-sm text-ink-sub">
           이미 계정이 있으신가요?{" "}
           <Link href="/login" className="font-bold text-plane-dark">
             로그인
