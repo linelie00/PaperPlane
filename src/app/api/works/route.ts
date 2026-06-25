@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
 import { runTranslation } from "@/lib/translation";
-import { MAX_ORIGINAL_TEXT_LENGTH } from "@/lib/utils";
+import { MAX_ORIGINAL_TEXT_LENGTH, sanitizeHtml, isHtmlEmpty } from "@/lib/utils";
 import type { WorkListItem } from "@/types";
 
 // POST /api/works — 작품 생성 + AI 번역 (docs/04_API_SPEC.md)
@@ -27,12 +27,13 @@ export async function POST(req: NextRequest) {
   }
 
   const title = body.title?.trim();
-  const originalText = body.originalText?.trim();
+  // 리치 텍스트(HTML) 본문은 저장 전에 허용 태그만 남긴다. (XSS 방어)
+  const originalText = sanitizeHtml(body.originalText ?? "");
 
   if (!title) {
     return errorResponse("MISSING_TITLE", "작품 제목을 입력해주세요.", 400);
   }
-  if (!originalText) {
+  if (isHtmlEmpty(originalText)) {
     return errorResponse("MISSING_ORIGINAL_TEXT", "원문 텍스트를 입력해주세요.", 400);
   }
   if (originalText.length > MAX_ORIGINAL_TEXT_LENGTH) {

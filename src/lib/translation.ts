@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { translateText } from "@/lib/ai";
+import { sanitizeHtml } from "@/lib/utils";
 import type { TranslationStatus } from "@/types";
 
 // 작품 번역을 실행하고 상태를 갱신한다.
@@ -23,7 +24,7 @@ export async function runTranslation(workId: string): Promise<{
   });
 
   try {
-    const translatedText = await translateText({
+    const raw = await translateText({
       originalText: work.content.originalText,
       sourceLanguage: work.sourceLanguage,
       targetLanguage: work.targetLanguage,
@@ -31,6 +32,8 @@ export async function runTranslation(workId: string): Promise<{
       description: work.description,
       genre: work.genre,
     });
+    // LLM이 반환한 HTML도 저장 전에 정제한다. (서식 보존 + XSS 방어)
+    const translatedText = sanitizeHtml(raw);
 
     await db.workContent.update({
       where: { workId },

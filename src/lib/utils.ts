@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from "crypto";
+import sanitizeHtmlLib from "sanitize-html";
 
-// 공개 작품 본문 최대 길이 (업로드 제한)
-export const MAX_ORIGINAL_TEXT_LENGTH = 50000;
+// 공개 작품 본문 최대 길이 (업로드 제한). 서식 태그를 포함하므로 넉넉히 둔다.
+export const MAX_ORIGINAL_TEXT_LENGTH = 100000;
 // 댓글 최대 길이 (docs/04_API_SPEC.md)
 export const MAX_COMMENT_LENGTH = 500;
 
@@ -34,6 +35,32 @@ export function sanitizeText(input: string): string {
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .trim();
+}
+
+// 리치 텍스트 본문(에디터/번역 결과)에서 허용 태그만 남긴다. (저장 시점 XSS 방어)
+// 평문 필드(댓글/제목 등)는 계속 sanitizeText를 사용한다.
+export function sanitizeHtml(html: string): string {
+  return sanitizeHtmlLib(html, {
+    allowedTags: [
+      "p", "br", "strong", "b", "em", "i", "u", "s",
+      "h1", "h2", "h3", "ul", "ol", "li", "blockquote", "a", "img", "span",
+    ],
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+      img: ["src", "alt"],
+      "*": ["class"],
+    },
+    // javascript: 등 위험 스킴 차단. 상대경로(/uploads/...)는 기본 허용된다.
+    allowedSchemes: ["http", "https", "mailto"],
+    allowedSchemesByTag: { img: ["http", "https"] },
+    // <img src="/uploads/..."> 같은 상대 경로 허용
+    allowProtocolRelative: false,
+  });
+}
+
+// 본문이 실제로 비어 있는지(태그만 있는지) 판정한다.
+export function isHtmlEmpty(html: string): boolean {
+  return sanitizeText(html).replace(/\s+/g, "") === "";
 }
 
 // 이메일 형식 검증

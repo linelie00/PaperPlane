@@ -142,9 +142,10 @@ export function WorkDetailView({
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <h2 className="font-bold text-ink-main">원문</h2>
-          <p className="mt-3 whitespace-pre-wrap text-[15px] leading-[1.8] text-ink-main">
-            {work.originalText}
-          </p>
+          <div
+            className="rich-content mt-3 text-[15px] text-ink-main"
+            dangerouslySetInnerHTML={{ __html: work.originalText }}
+          />
         </Card>
         <Card>
           <div className="flex items-center justify-between">
@@ -169,9 +170,10 @@ export function WorkDetailView({
             </p>
           )}
           {translatedText ? (
-            <p className="mt-3 whitespace-pre-wrap text-[15px] leading-[1.8] text-ink-main">
-              {translatedText}
-            </p>
+            <div
+              className="rich-content mt-3 text-[15px] text-ink-main"
+              dangerouslySetInnerHTML={{ __html: translatedText }}
+            />
           ) : (
             status !== "processing" &&
             status !== "failed" && (

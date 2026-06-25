@@ -47,7 +47,10 @@ Rules:
 - Translate dialogue naturally.
 - Avoid overly literal translation.
 - If a term is ambiguous, choose the most contextually natural expression.
-- Output only the translated text, without any preamble or explanation.`;
+- The input may contain HTML formatting tags (e.g. <p>, <strong>, <h2>, <ul>, <img>).
+  Preserve every HTML tag and its attributes exactly as-is — especially <img> tags, which must be kept unchanged.
+  Translate only the human-readable text content between the tags; never translate tag names, attribute names, URLs, or file paths.
+- Output only the translated content (with the original HTML structure intact), without any preamble or explanation.`;
 
 export type TranslateParams = {
   originalText: string;

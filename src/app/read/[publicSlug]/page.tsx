@@ -77,9 +77,11 @@ export default async function ReaderPage({
       <p className="mt-2 text-sm text-ink-muted">by {work.author.nickname}</p>
 
       {/* 번역 본문 — 가독성 최우선 (docs/08_UI_DESIGN_GUIDE.md) */}
-      <article className="mt-8 whitespace-pre-wrap text-[18px] leading-[1.9] text-ink-main">
-        {work.content.translatedText}
-      </article>
+      {/* 저장 시점에 sanitize된 HTML이므로 렌더는 안전하다. */}
+      <article
+        className="rich-content mt-8 text-[18px] text-ink-main"
+        dangerouslySetInnerHTML={{ __html: work.content.translatedText ?? "" }}
+      />
 
       <CommentSection
         workId={work.id}

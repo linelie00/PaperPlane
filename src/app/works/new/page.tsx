@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Input";
+import { RichTextEditor } from "@/components/editor/RichTextEditor";
+
+// 태그 제거 후 본문이 비었는지 확인 (HTML 빈 본문 판정)
+function isContentEmpty(html: string): boolean {
+  return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim() === "";
+}
 
 export default function NewWorkPage() {
   const router = useRouter();
@@ -32,7 +38,7 @@ export default function NewWorkPage() {
       setError("작품 제목을 입력해주세요.");
       return;
     }
-    if (!form.originalText.trim()) {
+    if (isContentEmpty(form.originalText)) {
       setError("원문 텍스트를 입력해주세요.");
       return;
     }
@@ -115,16 +121,14 @@ export default function NewWorkPage() {
 
           <Card className="flex flex-col gap-4">
             <h2 className="font-bold text-ink-main">2. 원문 텍스트</h2>
-            <Field label="원문" htmlFor="originalText">
-              <Textarea
-                id="originalText"
-                rows={12}
-                value={form.originalText}
-                onChange={(e) => update("originalText", e.target.value)}
-                placeholder="번역할 원문 텍스트를 붙여넣으세요"
-                required
-              />
-            </Field>
+            <p className="-mt-2 text-sm text-ink-sub">
+              볼드·제목·목록 등 서식과 이미지를 사용할 수 있습니다. 서식은
+              번역본에도 그대로 유지됩니다.
+            </p>
+            <RichTextEditor
+              value={form.originalText}
+              onChange={(html) => update("originalText", html)}
+            />
           </Card>
 
           <Card className="flex flex-col gap-4">
