@@ -12,7 +12,7 @@ export function Header({ nickname }: HeaderProps) {
     <header className="sticky top-0 z-20 border-b border-paper-border/60 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <Link
-          href={nickname ? "/dashboard" : "/"}
+          href="/"
           className="text-xl font-extrabold tracking-tight text-ink-main"
         >
           <span className="text-plane-primary">✈</span> PaperPlane
