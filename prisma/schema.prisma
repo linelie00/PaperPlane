@@ -1,0 +1,87 @@
+// PaperPlane MVP Prisma schema
+// 기준 문서: docs/05_DB_SCHEMA.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TranslationStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nickname     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  works        Work[]
+}
+
+model Work {
+  id             String       @id @default(cuid())
+  authorId       String
+  title          String
+  description    String       @default("")
+  genre          String       @default("")
+  tags           String[]     @default([])
+  sourceLanguage String       @default("ko")
+  targetLanguage String       @default("en")
+  isPublic       Boolean      @default(false)
+  publicSlug     String?      @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content        WorkContent?
+  comments       Comment[]
+  viewLogs       ViewLog[]
+
+  @@index([authorId])
+}
+
+model WorkContent {
+  id                String            @id @default(cuid())
+  workId            String            @unique
+  originalText      String
+  translatedText    String?
+  translationStatus TranslationStatus @default(pending)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  work              Work              @relation(fields: [workId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  workId    String
+  nickname  String
+  content   String
+  createdAt DateTime @default(now())
+  work      Work     @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@index([workId])
+}
+
+model ViewLog {
+  id          String   @id @default(cuid())
+  workId      String
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  userAgent   String?
+  ipHash      String?
+  createdAt   DateTime @default(now())
+  work        Work     @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@index([workId])
+  @@index([createdAt])
+}
