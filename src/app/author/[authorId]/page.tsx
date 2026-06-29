@@ -49,7 +49,7 @@ export default async function AuthorHomePage({
   return (
     <main className="min-h-screen">
       {/* 배경 사진 */}
-      <div className="relative h-44 w-full bg-gradient-to-br from-sky-pale to-plane-light/40 sm:h-56">
+      <div className="relative z-0 h-44 w-full bg-gradient-to-br from-sky-pale to-plane-light/40 sm:h-56">
         {author.coverImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -61,8 +61,8 @@ export default async function AuthorHomePage({
       </div>
 
       <div className="mx-auto max-w-4xl px-5">
-        {/* 프로필 헤더 */}
-        <div className="-mt-12 flex flex-col items-center text-center sm:-mt-14">
+        {/* 프로필 헤더 (배경 배너 위로 올라오도록 z-10) */}
+        <div className="relative z-10 -mt-12 flex flex-col items-center text-center sm:-mt-14">
           <Avatar
             src={author.image}
             name={author.nickname}
