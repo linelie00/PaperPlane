@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -99,9 +100,26 @@ export function WorkDetailView({
             </div>
           )}
         </div>
-        <div className="text-right text-sm text-ink-sub">
-          <p>조회수 {work.viewCount}</p>
-          <p>댓글 {work.comments.length}</p>
+        <div className="flex flex-col items-end gap-3">
+          <Link
+            href={`/works/${work.id}/edit`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-plane-light bg-white px-4 py-2 text-sm font-bold text-plane-dark transition hover:bg-sky-pale"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 20h4l10-10-4-4L4 16v4zM14.5 5.5l4 4"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            작품 수정
+          </Link>
+          <div className="text-right text-sm text-ink-sub">
+            <p>조회수 {work.viewCount}</p>
+            <p>댓글 {work.comments.length}</p>
+          </div>
         </div>
       </div>
 

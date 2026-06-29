@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
-import { generatePublicSlug } from "@/lib/utils";
+import {
+  generatePublicSlug,
+  sanitizeHtml,
+  isHtmlEmpty,
+  MAX_ORIGINAL_TEXT_LENGTH,
+} from "@/lib/utils";
+import { runTranslation } from "@/lib/translation";
 import type { WorkDetail } from "@/types";
 
 // GET /api/works/[workId] — 작품 상세 (소유자만, docs/04_API_SPEC.md)
@@ -51,7 +57,8 @@ export async function GET(
   return NextResponse.json(result);
 }
 
-// PATCH /api/works/[workId] — 공개 여부 / 메타데이터 수정 (소유자만)
+// PATCH /api/works/[workId] — 공개 여부 / 메타데이터 / 본문 수정 (소유자만)
+// 본문 또는 번역 언어가 바뀌면 번역을 다시 생성한다.
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ workId: string }> },
@@ -60,7 +67,10 @@ export async function PATCH(
   if (!user) return ApiError.unauthorized();
 
   const { workId } = await params;
-  const work = await db.work.findUnique({ where: { id: workId } });
+  const work = await db.work.findUnique({
+    where: { id: workId },
+    include: { content: true },
+  });
   if (!work) return ApiError.workNotFound();
   if (work.authorId !== user.userId) return ApiError.forbidden();
 
@@ -70,6 +80,9 @@ export async function PATCH(
     description?: string;
     genre?: string;
     tags?: string[];
+    sourceLanguage?: string;
+    targetLanguage?: string;
+    originalText?: string;
   };
   try {
     body = await req.json();
@@ -78,10 +91,16 @@ export async function PATCH(
   }
 
   const data: Record<string, unknown> = {};
-  if (typeof body.title === "string") data.title = body.title.trim();
+  if (typeof body.title === "string") {
+    const title = body.title.trim();
+    if (!title) return errorResponse("MISSING_TITLE", "작품 제목을 입력해주세요.", 400);
+    data.title = title;
+  }
   if (typeof body.description === "string") data.description = body.description.trim();
   if (typeof body.genre === "string") data.genre = body.genre.trim();
   if (Array.isArray(body.tags)) data.tags = body.tags;
+  if (typeof body.sourceLanguage === "string") data.sourceLanguage = body.sourceLanguage;
+  if (typeof body.targetLanguage === "string") data.targetLanguage = body.targetLanguage;
 
   if (typeof body.isPublic === "boolean") {
     data.isPublic = body.isPublic;
@@ -91,14 +110,48 @@ export async function PATCH(
     }
   }
 
-  const updated = await db.work.update({
-    where: { id: workId },
-    data,
-  });
+  // 본문(HTML)은 저장 전에 sanitize한다.
+  let newOriginal: string | undefined;
+  if (typeof body.originalText === "string") {
+    newOriginal = sanitizeHtml(body.originalText);
+    if (isHtmlEmpty(newOriginal)) {
+      return errorResponse("MISSING_ORIGINAL_TEXT", "원문 텍스트를 입력해주세요.", 400);
+    }
+    if (newOriginal.length > MAX_ORIGINAL_TEXT_LENGTH) {
+      return errorResponse(
+        "TEXT_TOO_LONG",
+        `원문 텍스트는 ${MAX_ORIGINAL_TEXT_LENGTH}자를 넘을 수 없습니다.`,
+        400,
+      );
+    }
+  }
+
+  // 본문/언어 변경 여부 → 번역 재생성 필요 판정
+  const contentChanged =
+    newOriginal !== undefined && newOriginal !== work.content?.originalText;
+  const langChanged =
+    ("sourceLanguage" in data && data.sourceLanguage !== work.sourceLanguage) ||
+    ("targetLanguage" in data && data.targetLanguage !== work.targetLanguage);
+
+  const updated = await db.work.update({ where: { id: workId }, data });
+  if (newOriginal !== undefined) {
+    await db.workContent.update({
+      where: { workId },
+      data: { originalText: newOriginal },
+    });
+  }
+
+  // 번역 재생성 (변경 시에만). runTranslation은 갱신된 DB 값을 읽는다.
+  let translationStatus = work.content?.translationStatus ?? "pending";
+  if (contentChanged || langChanged) {
+    const r = await runTranslation(workId);
+    translationStatus = r.translationStatus;
+  }
 
   return NextResponse.json({
     success: true,
     isPublic: updated.isPublic,
     publicSlug: updated.publicSlug,
+    translationStatus,
   });
 }
