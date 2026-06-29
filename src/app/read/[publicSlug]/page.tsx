@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { AuthorBadge } from "@/components/AuthorBadge";
+import { absoluteUrl, firstImageSrc, plainExcerpt } from "@/lib/meta";
 
 const LANG_LABEL: Record<string, string> = {
   ko: "한국어",
@@ -9,6 +11,63 @@ const LANG_LABEL: Record<string, string> = {
   ja: "日本語",
   zh: "中文",
 };
+
+// 소셜 공유 미리보기 (Open Graph / Twitter Card)
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ publicSlug: string }>;
+}): Promise<Metadata> {
+  const { publicSlug } = await params;
+  const work = await db.work.findUnique({
+    where: { publicSlug },
+    select: {
+      title: true,
+      description: true,
+      isPublic: true,
+      author: { select: { nickname: true, image: true, coverImage: true } },
+      chapters: {
+        where: { isPublic: true, translationStatus: "completed" },
+        orderBy: { order: "asc" },
+        take: 1,
+        select: { translatedText: true },
+      },
+    },
+  });
+
+  if (!work || !work.isPublic || work.chapters.length === 0) {
+    return { title: "작품" };
+  }
+
+  const description = plainExcerpt(
+    work.description,
+    `${work.author.nickname}의 작품을 PaperPlane에서 읽어보세요.`,
+  );
+  const image = absoluteUrl(
+    firstImageSrc(work.chapters[0]?.translatedText) ??
+      work.author.coverImage ??
+      work.author.image,
+  );
+  const images = image ? [image] : undefined;
+
+  return {
+    title: work.title,
+    description,
+    openGraph: {
+      type: "article",
+      title: work.title,
+      description,
+      authors: [work.author.nickname],
+      ...(images ? { images } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: work.title,
+      description,
+      ...(images ? { images } : {}),
+    },
+  };
+}
 
 export default async function ReaderListPage({
   params,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
@@ -5,8 +6,66 @@ import { db } from "@/lib/db";
 import { getClientIp, hashIp } from "@/lib/utils";
 import { getChapterCommentTree } from "@/lib/comments";
 import { withLazyImages } from "@/lib/html";
+import { absoluteUrl, firstImageSrc, plainExcerpt } from "@/lib/meta";
 import { CommentSection } from "../CommentSection";
 import { AuthorBadge } from "@/components/AuthorBadge";
+
+// 소셜 공유 미리보기 (회차 단위)
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ publicSlug: string; order: string }>;
+}): Promise<Metadata> {
+  const { publicSlug, order } = await params;
+  const work = await db.work.findUnique({
+    where: { publicSlug },
+    select: {
+      title: true,
+      isPublic: true,
+      author: { select: { nickname: true, image: true, coverImage: true } },
+      chapters: {
+        where: { isPublic: true, translationStatus: "completed", order: Number(order) },
+        take: 1,
+        select: { title: true, translatedText: true },
+      },
+    },
+  });
+
+  const chapter = work?.chapters[0];
+  if (!work || !work.isPublic || !chapter) {
+    return { title: "회차" };
+  }
+
+  const title = `${chapter.title} - ${work.title}`;
+  const description = plainExcerpt(
+    chapter.translatedText,
+    `${work.author.nickname}의 작품 「${work.title}」을 PaperPlane에서 읽어보세요.`,
+  );
+  const image = absoluteUrl(
+    firstImageSrc(chapter.translatedText) ??
+      work.author.coverImage ??
+      work.author.image,
+  );
+  const images = image ? [image] : undefined;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      authors: [work.author.nickname],
+      ...(images ? { images } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(images ? { images } : {}),
+    },
+  };
+}
 
 const LANG_LABEL: Record<string, string> = {
   ko: "한국어",

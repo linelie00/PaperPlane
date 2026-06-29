@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Avatar } from "@/components/ui/Avatar";
+import { absoluteUrl, plainExcerpt } from "@/lib/meta";
 
 const LANG_LABEL: Record<string, string> = {
   ko: "한국어",
@@ -9,6 +11,45 @@ const LANG_LABEL: Record<string, string> = {
   ja: "日本語",
   zh: "中文",
 };
+
+// 소셜 공유 미리보기 (작가 홈)
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ authorId: string }>;
+}): Promise<Metadata> {
+  const { authorId } = await params;
+  const author = await db.user.findUnique({
+    where: { id: authorId },
+    select: { nickname: true, image: true, coverImage: true, bio: true },
+  });
+  if (!author) return { title: "작가" };
+
+  const title = `${author.nickname} 작가`;
+  const description = plainExcerpt(
+    author.bio,
+    `${author.nickname} 작가의 공개 작품을 PaperPlane에서 만나보세요.`,
+  );
+  const image = absoluteUrl(author.coverImage ?? author.image);
+  const images = image ? [image] : undefined;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      type: "profile",
+      title,
+      description,
+      ...(images ? { images } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(images ? { images } : {}),
+    },
+  };
+}
 
 // 공개 작가 홈 — 누구나 접근 가능
 export default async function AuthorHomePage({
