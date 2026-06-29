@@ -57,9 +57,9 @@ export async function POST(
 
   const { translationStatus } = await runChapterTranslation(chapter.id);
 
-  // 공개 요청 시: 번역이 완료된 경우에만 공개로 설정한다.
+  // 공개 요청 시: 원문만으로도 공개할 수 있다. (번역은 보조 기능)
   let isPublic = false;
-  if (body.isPublic && translationStatus === "completed") {
+  if (body.isPublic) {
     await db.chapter.update({
       where: { id: chapter.id },
       data: { isPublic: true },

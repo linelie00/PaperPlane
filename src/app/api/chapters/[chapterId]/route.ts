@@ -78,14 +78,7 @@ export async function PATCH(
   }
 
   if (typeof body.isPublic === "boolean") {
-    // 번역이 완료된 회차만 공개할 수 있다.
-    if (body.isPublic && !contentChanged && chapter.translationStatus !== "completed") {
-      return errorResponse(
-        "NOT_TRANSLATED",
-        "번역이 완료된 회차만 공개할 수 있습니다.",
-        400,
-      );
-    }
+    // 원문만으로도 공개할 수 있다. (번역은 독자가 선택해서 보는 보조 기능)
     data.isPublic = body.isPublic;
   }
 

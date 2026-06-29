@@ -31,7 +31,6 @@ export function ChapterActions({
   const [isPublic, setIsPublic] = useState(initialPublic);
   const [busy, setBusy] = useState(false);
 
-  const canPublish = status === "completed";
   const readUrl =
     workIsPublic && isPublic && publicSlug && appUrl
       ? `${appUrl}/read/${publicSlug}/${order}`
@@ -102,7 +101,7 @@ export function ChapterActions({
         </Link>
         <Button
           onClick={togglePublic}
-          disabled={busy || (!isPublic && !canPublish)}
+          disabled={busy}
           className="px-4 py-2 text-sm"
           variant={isPublic ? "secondary" : "primary"}
         >

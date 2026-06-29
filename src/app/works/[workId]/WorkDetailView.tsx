@@ -342,7 +342,6 @@ function ChapterRow({
     }
   }
 
-  const canPublish = status === "completed";
   const readUrl =
     workIsPublic && isPublic && publicSlug && appUrl
       ? `${appUrl}/read/${publicSlug}/${chapter.order}`
@@ -394,8 +393,7 @@ function ChapterRow({
         </Link>
         <button
           onClick={togglePublic}
-          disabled={busy || (!isPublic && !canPublish)}
-          title={!canPublish && !isPublic ? "번역 완료 후 공개할 수 있습니다." : ""}
+          disabled={busy}
           className="rounded-lg border border-plane-light px-3 py-1.5 text-sm font-bold text-plane-dark hover:bg-sky-pale disabled:opacity-40"
         >
           {isPublic ? "비공개" : "공개"}

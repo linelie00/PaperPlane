@@ -27,10 +27,10 @@ export async function generateMetadata({
       isPublic: true,
       author: { select: { nickname: true, image: true, coverImage: true } },
       chapters: {
-        where: { isPublic: true, translationStatus: "completed" },
+        where: { isPublic: true },
         orderBy: { order: "asc" },
         take: 1,
-        select: { translatedText: true },
+        select: { originalText: true },
       },
     },
   });
@@ -44,7 +44,7 @@ export async function generateMetadata({
     `${work.author.nickname}의 작품을 PaperPlane에서 읽어보세요.`,
   );
   const image = absoluteUrl(
-    firstImageSrc(work.chapters[0]?.translatedText) ??
+    firstImageSrc(work.chapters[0]?.originalText) ??
       work.author.coverImage ??
       work.author.image,
   );
@@ -81,7 +81,7 @@ export default async function ReaderListPage({
     include: {
       author: { select: { id: true, nickname: true, image: true } },
       chapters: {
-        where: { isPublic: true, translationStatus: "completed" },
+        where: { isPublic: true },
         orderBy: { order: "asc" },
         select: { order: true, title: true, _count: { select: { comments: true } } },
       },

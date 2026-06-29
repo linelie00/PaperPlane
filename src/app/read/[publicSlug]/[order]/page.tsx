@@ -8,6 +8,7 @@ import { getChapterCommentTree } from "@/lib/comments";
 import { withLazyImages } from "@/lib/html";
 import { absoluteUrl, firstImageSrc, plainExcerpt } from "@/lib/meta";
 import { CommentSection } from "../CommentSection";
+import { ChapterContent } from "../ChapterContent";
 import { AuthorBadge } from "@/components/AuthorBadge";
 
 // 소셜 공유 미리보기 (회차 단위)
@@ -24,9 +25,9 @@ export async function generateMetadata({
       isPublic: true,
       author: { select: { nickname: true, image: true, coverImage: true } },
       chapters: {
-        where: { isPublic: true, translationStatus: "completed", order: Number(order) },
+        where: { isPublic: true, order: Number(order) },
         take: 1,
-        select: { title: true, translatedText: true },
+        select: { title: true, originalText: true },
       },
     },
   });
@@ -38,11 +39,11 @@ export async function generateMetadata({
 
   const title = `${chapter.title} - ${work.title}`;
   const description = plainExcerpt(
-    chapter.translatedText,
+    chapter.originalText,
     `${work.author.nickname}의 작품 「${work.title}」을 PaperPlane에서 읽어보세요.`,
   );
   const image = absoluteUrl(
-    firstImageSrc(chapter.translatedText) ??
+    firstImageSrc(chapter.originalText) ??
       work.author.coverImage ??
       work.author.image,
   );
@@ -96,7 +97,7 @@ export default async function ChapterReaderPage({
     include: {
       author: { select: { id: true, nickname: true, image: true } },
       chapters: {
-        where: { isPublic: true, translationStatus: "completed" },
+        where: { isPublic: true },
         orderBy: { order: "asc" },
       },
     },
@@ -141,8 +142,8 @@ export default async function ChapterReaderPage({
         ← {work.title}
       </Link>
       <p className="mt-4 text-sm font-semibold text-plane-dark">
-        <span className="text-plane-primary">✈</span>{" "}
-        {LANG_LABEL[work.targetLanguage] ?? work.targetLanguage} · {chapter.order}화
+        <span className="text-plane-primary">✈</span> {chapter.order}화 ·{" "}
+        {LANG_LABEL[work.sourceLanguage] ?? work.sourceLanguage}
       </p>
       <h1 className="mt-2 text-3xl font-extrabold leading-tight text-ink-main">
         {chapter.title}
@@ -155,12 +156,16 @@ export default async function ChapterReaderPage({
         />
       </div>
 
-      {/* 번역 본문 — 저장 시점에 sanitize된 HTML이므로 렌더는 안전하다. */}
-      <article
-        className="rich-content mt-8 text-[18px] text-ink-main"
-        dangerouslySetInnerHTML={{
-          __html: withLazyImages(chapter.translatedText ?? ""),
-        }}
+      {/* 원문 우선, 번역이 있으면 언어 전환 가능 */}
+      <ChapterContent
+        original={withLazyImages(chapter.originalText)}
+        translated={
+          chapter.translatedText && chapter.translationStatus === "completed"
+            ? withLazyImages(chapter.translatedText)
+            : null
+        }
+        sourceLanguage={work.sourceLanguage}
+        targetLanguage={work.targetLanguage}
       />
 
       {/* 이전/다음 회차 네비게이션 */}

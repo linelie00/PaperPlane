@@ -14,7 +14,7 @@ export async function GET(
     include: {
       author: { select: { nickname: true } },
       chapters: {
-        where: { isPublic: true, translationStatus: "completed" },
+        where: { isPublic: true },
         orderBy: { order: "asc" },
         select: { order: true, title: true },
       },

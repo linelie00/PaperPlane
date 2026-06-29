@@ -70,7 +70,7 @@ export default async function AuthorHomePage({
     where: {
       authorId,
       isPublic: true,
-      chapters: { some: { isPublic: true, translationStatus: "completed" } },
+      chapters: { some: { isPublic: true } },
     },
     orderBy: { createdAt: "desc" },
     select: {
@@ -81,7 +81,7 @@ export default async function AuthorHomePage({
       publicSlug: true,
       _count: {
         select: {
-          chapters: { where: { isPublic: true, translationStatus: "completed" } },
+          chapters: { where: { isPublic: true } },
         },
       },
     },
