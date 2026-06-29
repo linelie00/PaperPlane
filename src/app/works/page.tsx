@@ -33,7 +33,7 @@ export default async function WorksPage() {
     <main className="mx-auto max-w-6xl px-5 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-extrabold text-ink-main">내 작품</h1>
-        <LinkButton href="/works/new">새 작품 업로드</LinkButton>
+        <LinkButton href="/works/new">글쓰기</LinkButton>
       </div>
 
         {works.length === 0 ? (
