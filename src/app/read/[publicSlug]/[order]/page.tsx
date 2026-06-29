@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { getClientIp, hashIp } from "@/lib/utils";
 import { getChapterCommentTree } from "@/lib/comments";
 import { CommentSection } from "../CommentSection";
+import { AuthorBadge } from "@/components/AuthorBadge";
 
 const LANG_LABEL: Record<string, string> = {
   ko: "한국어",
@@ -33,7 +34,7 @@ export default async function ChapterReaderPage({
   const work = await db.work.findUnique({
     where: { publicSlug },
     include: {
-      author: { select: { nickname: true } },
+      author: { select: { id: true, nickname: true, image: true } },
       chapters: {
         where: { isPublic: true, translationStatus: "completed" },
         orderBy: { order: "asc" },
@@ -86,7 +87,13 @@ export default async function ChapterReaderPage({
       <h1 className="mt-2 text-3xl font-extrabold leading-tight text-ink-main">
         {chapter.title}
       </h1>
-      <p className="mt-2 text-sm text-ink-muted">by {work.author.nickname}</p>
+      <div className="mt-2">
+        <AuthorBadge
+          authorId={work.author.id}
+          nickname={work.author.nickname}
+          image={work.author.image}
+        />
+      </div>
 
       {/* 번역 본문 — 저장 시점에 sanitize된 HTML이므로 렌더는 안전하다. */}
       <article

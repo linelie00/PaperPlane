@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { AuthorBadge } from "@/components/AuthorBadge";
 
 const LANG_LABEL: Record<string, string> = {
   ko: "한국어",
@@ -19,7 +20,7 @@ export default async function ReaderListPage({
   const work = await db.work.findUnique({
     where: { publicSlug },
     include: {
-      author: { select: { nickname: true } },
+      author: { select: { id: true, nickname: true, image: true } },
       chapters: {
         where: { isPublic: true, translationStatus: "completed" },
         orderBy: { order: "asc" },
@@ -45,7 +46,13 @@ export default async function ReaderListPage({
         {work.title}
       </h1>
       {work.description && <p className="mt-3 text-ink-sub">{work.description}</p>}
-      <p className="mt-2 text-sm text-ink-muted">by {work.author.nickname}</p>
+      <div className="mt-3">
+        <AuthorBadge
+          authorId={work.author.id}
+          nickname={work.author.nickname}
+          image={work.author.image}
+        />
+      </div>
 
       {/* 회차 목록 */}
       <section className="mt-8">

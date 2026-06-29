@@ -14,14 +14,24 @@ export async function PATCH(req: NextRequest) {
   const session = await getCurrentUser();
   if (!session) return ApiError.unauthorized();
 
-  let body: { nickname?: string; image?: string | null };
+  let body: {
+    nickname?: string;
+    image?: string | null;
+    coverImage?: string | null;
+    bio?: string | null;
+  };
   try {
     body = await req.json();
   } catch {
     return errorResponse("INVALID_PAYLOAD", "잘못된 요청입니다.", 400);
   }
 
-  const data: { nickname?: string; image?: string | null } = {};
+  const data: {
+    nickname?: string;
+    image?: string | null;
+    coverImage?: string | null;
+    bio?: string | null;
+  } = {};
 
   if (typeof body.nickname === "string") {
     const nickname = sanitizeText(body.nickname);
@@ -34,14 +44,24 @@ export async function PATCH(req: NextRequest) {
     data.nickname = nickname;
   }
 
-  // image: 문자열 URL(자체 업로드/외부) 또는 null(제거)
-  if (body.image === null) {
-    data.image = null;
-  } else if (typeof body.image === "string" && body.image) {
-    if (!isSafeImageUrl(body.image)) {
-      return errorResponse("INVALID_IMAGE", "허용되지 않은 이미지 주소입니다.", 400);
+  // 이미지(프로필/배경): 문자열 URL(자체 업로드/외부) 또는 null(제거)
+  for (const key of ["image", "coverImage"] as const) {
+    const v = body[key];
+    if (v === null) {
+      data[key] = null;
+    } else if (typeof v === "string" && v) {
+      if (!isSafeImageUrl(v)) {
+        return errorResponse("INVALID_IMAGE", "허용되지 않은 이미지 주소입니다.", 400);
+      }
+      data[key] = v;
     }
-    data.image = body.image;
+  }
+
+  // 소개(bio): 평문, 200자 제한
+  if (body.bio === null) {
+    data.bio = null;
+  } else if (typeof body.bio === "string") {
+    data.bio = sanitizeText(body.bio).slice(0, 200);
   }
 
   const user = await db.user.update({

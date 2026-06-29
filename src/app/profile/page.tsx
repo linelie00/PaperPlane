@@ -10,7 +10,14 @@ export default async function ProfilePage() {
 
   const user = await db.user.findUnique({
     where: { id: session.userId },
-    select: { email: true, nickname: true, image: true },
+    select: {
+      id: true,
+      email: true,
+      nickname: true,
+      image: true,
+      coverImage: true,
+      bio: true,
+    },
   });
   if (!user) redirect("/login");
 
@@ -18,14 +25,24 @@ export default async function ProfilePage() {
     <>
       <Header nickname={session.nickname} image={session.image} />
       <main className="mx-auto max-w-2xl px-5 py-10">
-        <h1 className="text-2xl font-extrabold text-ink-main">프로필 설정</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-extrabold text-ink-main">프로필 설정</h1>
+          <a
+            href={`/author/${user.id}`}
+            className="text-sm font-semibold text-plane-dark hover:underline"
+          >
+            내 작가 홈 보기 →
+          </a>
+        </div>
         <p className="mt-1 text-sm text-ink-sub">
-          닉네임과 프로필 사진을 변경할 수 있어요.
+          닉네임, 프로필 사진, 배경 사진과 소개를 변경할 수 있어요.
         </p>
         <ProfileForm
           email={user.email}
           initialNickname={user.nickname}
           initialImage={user.image}
+          initialCoverImage={user.coverImage}
+          initialBio={user.bio}
         />
       </main>
     </>

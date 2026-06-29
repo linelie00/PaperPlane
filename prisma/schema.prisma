@@ -22,7 +22,9 @@ model User {
   email         String    @unique
   passwordHash  String? // 소셜 전용 계정은 비밀번호가 없다.
   nickname      String
-  image         String? // 제공자 아바타 (선택)
+  image         String? // 프로필 사진 (선택)
+  coverImage    String? // 작가 홈 배경 사진 (선택)
+  bio           String? // 작가 소개 (선택)
   emailVerified DateTime? // null = 미인증
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
