@@ -1,7 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { getClientIp, hashIp } from "@/lib/utils";
 import { CommentSection } from "./CommentSection";
 
 const LANG_LABEL: Record<string, string> = {
@@ -11,56 +10,32 @@ const LANG_LABEL: Record<string, string> = {
   zh: "中文",
 };
 
-type SearchParams = {
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-};
-
-export default async function ReaderPage({
+export default async function ReaderListPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ publicSlug: string }>;
-  searchParams: Promise<SearchParams>;
 }) {
   const { publicSlug } = await params;
-  const utm = await searchParams;
 
   const work = await db.work.findUnique({
     where: { publicSlug },
     include: {
-      content: true,
       author: { select: { nickname: true } },
+      chapters: {
+        where: { isPublic: true, translationStatus: "completed" },
+        orderBy: { order: "asc" },
+        select: { order: true, title: true },
+      },
       comments: { orderBy: { createdAt: "desc" } },
     },
   });
 
   // 존재하지 않는 publicSlug → 404
   if (!work) notFound();
-
-  // 비공개 작품 → 접근 불가 메시지
-  if (!work.isPublic) {
-    return <AccessDenied message="비공개 작품입니다." />;
+  // 비공개 작품 또는 공개 회차 없음 → 접근 불가
+  if (!work.isPublic || work.chapters.length === 0) {
+    return <AccessDenied message="아직 공개된 회차가 없는 작품입니다." />;
   }
-  // 번역 미완료 → 접근 불가 메시지
-  if (work.content?.translationStatus !== "completed") {
-    return <AccessDenied message="아직 번역이 준비되지 않은 작품입니다." />;
-  }
-
-  // 조회수 1 증가 + 유입 정보 저장 (docs/02_USER_FLOW.md)
-  const headerList = await headers();
-  await db.viewLog.create({
-    data: {
-      workId: work.id,
-      referrer: headerList.get("referer"),
-      utmSource: utm.utm_source ?? null,
-      utmMedium: utm.utm_medium ?? null,
-      utmCampaign: utm.utm_campaign ?? null,
-      userAgent: headerList.get("user-agent"),
-      ipHash: hashIp(getClientIp(headerList)),
-    },
-  });
 
   return (
     <main className="mx-auto max-w-[760px] px-5 py-12">
@@ -71,17 +46,33 @@ export default async function ReaderPage({
       <h1 className="mt-3 text-3xl font-extrabold leading-tight text-ink-main">
         {work.title}
       </h1>
-      {work.description && (
-        <p className="mt-3 text-ink-sub">{work.description}</p>
-      )}
+      {work.description && <p className="mt-3 text-ink-sub">{work.description}</p>}
       <p className="mt-2 text-sm text-ink-muted">by {work.author.nickname}</p>
 
-      {/* 번역 본문 — 가독성 최우선 (docs/08_UI_DESIGN_GUIDE.md) */}
-      {/* 저장 시점에 sanitize된 HTML이므로 렌더는 안전하다. */}
-      <article
-        className="rich-content mt-8 text-[18px] text-ink-main"
-        dangerouslySetInnerHTML={{ __html: work.content.translatedText ?? "" }}
-      />
+      {/* 회차 목록 */}
+      <section className="mt-8">
+        <h2 className="text-lg font-extrabold text-ink-main">
+          회차 {work.chapters.length}개
+        </h2>
+        <ul className="mt-4 flex flex-col gap-2">
+          {work.chapters.map((ch) => (
+            <li key={ch.order}>
+              <Link
+                href={`/read/${publicSlug}/${ch.order}`}
+                className="flex items-center justify-between rounded-2xl border border-paper-border bg-white px-5 py-4 transition hover:-translate-y-0.5 hover:border-plane-light hover:shadow-plane"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-plane-dark">
+                    {ch.order}화
+                  </span>
+                  <span className="font-bold text-ink-main">{ch.title}</span>
+                </span>
+                <span className="text-plane-primary">→</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <CommentSection
         workId={work.id}

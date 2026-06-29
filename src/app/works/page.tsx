@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -25,7 +24,7 @@ export default async function WorksPage() {
     where: { authorId: user.userId },
     orderBy: { createdAt: "desc" },
     include: {
-      content: { select: { translationStatus: true } },
+      chapters: { select: { isPublic: true } },
       _count: { select: { comments: true, viewLogs: true } },
     },
   });
@@ -55,15 +54,18 @@ export default async function WorksPage() {
                         <h2 className="text-lg font-bold text-ink-main">
                           {w.title}
                         </h2>
-                        <StatusBadge
-                          status={w.content?.translationStatus ?? "pending"}
-                        />
+                        <span className="rounded-full bg-sky-pale px-2.5 py-0.5 text-xs font-semibold text-plane-dark">
+                          {w.chapters.length}화
+                        </span>
                       </div>
                       <p className="mt-1 text-sm text-ink-sub">
                         {langLabel(w.sourceLanguage)} →{" "}
                         {langLabel(w.targetLanguage)} ·{" "}
                         {w.isPublic ? (
-                          <span className="text-plane-dark">공개</span>
+                          <span className="text-plane-dark">
+                            공개 (회차 {w.chapters.filter((c) => c.isPublic).length}
+                            개)
+                          </span>
                         ) : (
                           <span className="text-ink-muted">비공개</span>
                         )}

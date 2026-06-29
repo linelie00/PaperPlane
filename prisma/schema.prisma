@@ -68,22 +68,28 @@ model Work {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  content        WorkContent?
+  chapters       Chapter[]
   comments       Comment[]
   viewLogs       ViewLog[]
 
   @@index([authorId])
 }
 
-model WorkContent {
+model Chapter {
   id                String            @id @default(cuid())
-  workId            String            @unique
+  workId            String
+  order             Int // 회차 번호 (1부터)
+  title             String
   originalText      String
   translatedText    String?
   translationStatus TranslationStatus @default(pending)
+  isPublic          Boolean           @default(false)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   work              Work              @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([workId, order])
+  @@index([workId])
 }
 
 model Comment {

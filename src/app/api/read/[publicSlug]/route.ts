@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { errorResponse } from "@/lib/api";
 
-// GET /api/read/[publicSlug] — 공개 작품 조회 (로그인 불필요, docs/04_API_SPEC.md)
+// GET /api/read/[publicSlug] — 공개 작품 + 공개 회차 목록 (로그인 불필요)
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ publicSlug: string }> },
@@ -12,8 +12,12 @@ export async function GET(
   const work = await db.work.findUnique({
     where: { publicSlug },
     include: {
-      content: true,
       author: { select: { nickname: true } },
+      chapters: {
+        where: { isPublic: true, translationStatus: "completed" },
+        orderBy: { order: "asc" },
+        select: { order: true, title: true },
+      },
       _count: { select: { viewLogs: true } },
     },
   });
@@ -21,15 +25,8 @@ export async function GET(
   if (!work) {
     return errorResponse("SLUG_NOT_FOUND", "작품을 찾을 수 없습니다.", 404);
   }
-  if (!work.isPublic) {
-    return errorResponse("WORK_NOT_PUBLIC", "비공개 작품입니다.", 403);
-  }
-  if (work.content?.translationStatus !== "completed") {
-    return errorResponse(
-      "TRANSLATION_NOT_READY",
-      "번역이 아직 완료되지 않았습니다.",
-      409,
-    );
+  if (!work.isPublic || work.chapters.length === 0) {
+    return errorResponse("WORK_NOT_PUBLIC", "아직 공개된 회차가 없습니다.", 403);
   }
 
   return NextResponse.json({
@@ -37,7 +34,7 @@ export async function GET(
     description: work.description,
     authorNickname: work.author.nickname,
     targetLanguage: work.targetLanguage,
-    translatedText: work.content.translatedText,
     viewCount: work._count.viewLogs,
+    chapters: work.chapters,
   });
 }

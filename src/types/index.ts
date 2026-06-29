@@ -11,11 +11,23 @@ export type WorkListItem = {
   title: string;
   sourceLanguage: string;
   targetLanguage: string;
-  translationStatus: TranslationStatus;
   isPublic: boolean;
+  chapterCount: number;
+  publicChapterCount: number;
   viewCount: number;
   commentCount: number;
   createdAt: string;
+};
+
+// 회차 (창작자 화면용 — 원문/번역문 포함)
+export type ChapterItem = {
+  id: string;
+  order: number;
+  title: string;
+  isPublic: boolean;
+  translationStatus: TranslationStatus;
+  originalText: string;
+  translatedText: string | null;
 };
 
 export type CommentItem = {
@@ -33,12 +45,10 @@ export type WorkDetail = {
   tags: string[];
   sourceLanguage: string;
   targetLanguage: string;
-  originalText: string;
-  translatedText: string | null;
-  translationStatus: TranslationStatus;
   isPublic: boolean;
   publicSlug: string | null;
   viewCount: number;
+  chapters: ChapterItem[];
   comments: CommentItem[];
 };
 

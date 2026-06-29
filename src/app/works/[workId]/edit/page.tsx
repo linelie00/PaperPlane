@@ -12,10 +12,7 @@ export default async function EditWorkPage({
   if (!user) redirect("/login");
 
   const { workId } = await params;
-  const work = await db.work.findUnique({
-    where: { id: workId },
-    include: { content: true },
-  });
+  const work = await db.work.findUnique({ where: { id: workId } });
 
   if (!work) notFound();
   // 창작자는 자신의 작품만 수정할 수 있다. (CLAUDE.md)
@@ -31,7 +28,6 @@ export default async function EditWorkPage({
         tags: work.tags.join(", "),
         sourceLanguage: work.sourceLanguage,
         targetLanguage: work.targetLanguage,
-        originalText: work.content?.originalText ?? "",
       }}
     />
   );

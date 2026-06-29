@@ -16,7 +16,7 @@ export default async function WorkDetailPage({
   const work = await db.work.findUnique({
     where: { id: workId },
     include: {
-      content: true,
+      chapters: { orderBy: { order: "asc" } },
       comments: { orderBy: { createdAt: "desc" } },
       _count: { select: { viewLogs: true } },
     },
@@ -34,12 +34,18 @@ export default async function WorkDetailPage({
     tags: work.tags,
     sourceLanguage: work.sourceLanguage,
     targetLanguage: work.targetLanguage,
-    originalText: work.content?.originalText ?? "",
-    translatedText: work.content?.translatedText ?? null,
-    translationStatus: work.content?.translationStatus ?? "pending",
     isPublic: work.isPublic,
     publicSlug: work.publicSlug,
     viewCount: work._count.viewLogs,
+    chapters: work.chapters.map((c) => ({
+      id: c.id,
+      order: c.order,
+      title: c.title,
+      isPublic: c.isPublic,
+      translationStatus: c.translationStatus,
+      originalText: c.originalText,
+      translatedText: c.translatedText,
+    })),
     comments: work.comments.map((c) => ({
       id: c.id,
       nickname: c.nickname,

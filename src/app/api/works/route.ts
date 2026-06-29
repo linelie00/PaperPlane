@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
-import { runTranslation } from "@/lib/translation";
-import { MAX_ORIGINAL_TEXT_LENGTH, sanitizeHtml, isHtmlEmpty } from "@/lib/utils";
+import { generatePublicSlug } from "@/lib/utils";
 import type { WorkListItem } from "@/types";
 
-// POST /api/works — 작품 생성 + AI 번역 (docs/04_API_SPEC.md)
+// POST /api/works — 작품(프로젝트) 생성. 회차(본문)는 이후 따로 추가한다.
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return ApiError.unauthorized();
@@ -18,7 +17,6 @@ export async function POST(req: NextRequest) {
     tags?: string[];
     sourceLanguage?: string;
     targetLanguage?: string;
-    originalText?: string;
   };
   try {
     body = await req.json();
@@ -27,24 +25,11 @@ export async function POST(req: NextRequest) {
   }
 
   const title = body.title?.trim();
-  // 리치 텍스트(HTML) 본문은 저장 전에 허용 태그만 남긴다. (XSS 방어)
-  const originalText = sanitizeHtml(body.originalText ?? "");
-
   if (!title) {
     return errorResponse("MISSING_TITLE", "작품 제목을 입력해주세요.", 400);
   }
-  if (isHtmlEmpty(originalText)) {
-    return errorResponse("MISSING_ORIGINAL_TEXT", "원문 텍스트를 입력해주세요.", 400);
-  }
-  if (originalText.length > MAX_ORIGINAL_TEXT_LENGTH) {
-    return errorResponse(
-      "TEXT_TOO_LONG",
-      `원문 텍스트는 ${MAX_ORIGINAL_TEXT_LENGTH}자를 넘을 수 없습니다.`,
-      400,
-    );
-  }
 
-  // 작품 메타데이터 + 원문 저장 (번역 상태 pending)
+  // 작품 메타데이터만 저장. 공개 링크(slug)는 생성 시점에 발급한다.
   const work = await db.work.create({
     data: {
       authorId: user.userId,
@@ -54,22 +39,11 @@ export async function POST(req: NextRequest) {
       tags: Array.isArray(body.tags) ? body.tags : [],
       sourceLanguage: body.sourceLanguage ?? "ko",
       targetLanguage: body.targetLanguage ?? "en",
-      content: {
-        create: {
-          originalText,
-          translationStatus: "pending",
-        },
-      },
+      publicSlug: generatePublicSlug(),
     },
   });
 
-  // AI 번역 실행 (서버에서 처리)
-  const { translationStatus } = await runTranslation(work.id);
-
-  return NextResponse.json(
-    { workId: work.id, translationStatus },
-    { status: 201 },
-  );
+  return NextResponse.json({ workId: work.id }, { status: 201 });
 }
 
 // GET /api/works — 로그인 사용자의 작품 목록 (docs/04_API_SPEC.md)
@@ -81,7 +55,7 @@ export async function GET() {
     where: { authorId: user.userId },
     orderBy: { createdAt: "desc" },
     include: {
-      content: { select: { translationStatus: true } },
+      chapters: { select: { isPublic: true } },
       _count: { select: { comments: true, viewLogs: true } },
     },
   });
@@ -91,8 +65,9 @@ export async function GET() {
     title: w.title,
     sourceLanguage: w.sourceLanguage,
     targetLanguage: w.targetLanguage,
-    translationStatus: w.content?.translationStatus ?? "pending",
     isPublic: w.isPublic,
+    chapterCount: w.chapters.length,
+    publicChapterCount: w.chapters.filter((c) => c.isPublic).length,
     viewCount: w._count.viewLogs,
     commentCount: w._count.comments,
     createdAt: w.createdAt.toISOString(),

@@ -2,16 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
-import {
-  generatePublicSlug,
-  sanitizeHtml,
-  isHtmlEmpty,
-  MAX_ORIGINAL_TEXT_LENGTH,
-} from "@/lib/utils";
-import { runTranslation } from "@/lib/translation";
+import { generatePublicSlug } from "@/lib/utils";
+import { runChapterTranslation } from "@/lib/translation";
 import type { WorkDetail } from "@/types";
 
-// GET /api/works/[workId] — 작품 상세 (소유자만, docs/04_API_SPEC.md)
+// GET /api/works/[workId] — 작품 상세 + 회차 목록 (소유자만)
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ workId: string }> },
@@ -23,7 +18,7 @@ export async function GET(
   const work = await db.work.findUnique({
     where: { id: workId },
     include: {
-      content: true,
+      chapters: { orderBy: { order: "asc" } },
       comments: { orderBy: { createdAt: "desc" } },
       _count: { select: { viewLogs: true } },
     },
@@ -40,12 +35,18 @@ export async function GET(
     tags: work.tags,
     sourceLanguage: work.sourceLanguage,
     targetLanguage: work.targetLanguage,
-    originalText: work.content?.originalText ?? "",
-    translatedText: work.content?.translatedText ?? null,
-    translationStatus: work.content?.translationStatus ?? "pending",
     isPublic: work.isPublic,
     publicSlug: work.publicSlug,
     viewCount: work._count.viewLogs,
+    chapters: work.chapters.map((c) => ({
+      id: c.id,
+      order: c.order,
+      title: c.title,
+      isPublic: c.isPublic,
+      translationStatus: c.translationStatus,
+      originalText: c.originalText,
+      translatedText: c.translatedText,
+    })),
     comments: work.comments.map((c) => ({
       id: c.id,
       nickname: c.nickname,
@@ -57,8 +58,8 @@ export async function GET(
   return NextResponse.json(result);
 }
 
-// PATCH /api/works/[workId] — 공개 여부 / 메타데이터 / 본문 수정 (소유자만)
-// 본문 또는 번역 언어가 바뀌면 번역을 다시 생성한다.
+// PATCH /api/works/[workId] — 공개 여부 / 메타데이터 / 번역 언어 수정 (소유자만)
+// 번역 언어가 바뀌면 모든 회차를 다시 번역한다.
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ workId: string }> },
@@ -69,7 +70,7 @@ export async function PATCH(
   const { workId } = await params;
   const work = await db.work.findUnique({
     where: { id: workId },
-    include: { content: true },
+    include: { chapters: { select: { id: true } } },
   });
   if (!work) return ApiError.workNotFound();
   if (work.authorId !== user.userId) return ApiError.forbidden();
@@ -82,7 +83,6 @@ export async function PATCH(
     tags?: string[];
     sourceLanguage?: string;
     targetLanguage?: string;
-    originalText?: string;
   };
   try {
     body = await req.json();
@@ -104,54 +104,46 @@ export async function PATCH(
 
   if (typeof body.isPublic === "boolean") {
     data.isPublic = body.isPublic;
-    // 공개로 전환 시 publicSlug가 없으면 예측 어려운 값으로 생성한다.
     if (body.isPublic && !work.publicSlug) {
       data.publicSlug = generatePublicSlug();
     }
   }
 
-  // 본문(HTML)은 저장 전에 sanitize한다.
-  let newOriginal: string | undefined;
-  if (typeof body.originalText === "string") {
-    newOriginal = sanitizeHtml(body.originalText);
-    if (isHtmlEmpty(newOriginal)) {
-      return errorResponse("MISSING_ORIGINAL_TEXT", "원문 텍스트를 입력해주세요.", 400);
-    }
-    if (newOriginal.length > MAX_ORIGINAL_TEXT_LENGTH) {
-      return errorResponse(
-        "TEXT_TOO_LONG",
-        `원문 텍스트는 ${MAX_ORIGINAL_TEXT_LENGTH}자를 넘을 수 없습니다.`,
-        400,
-      );
-    }
-  }
-
-  // 본문/언어 변경 여부 → 번역 재생성 필요 판정
-  const contentChanged =
-    newOriginal !== undefined && newOriginal !== work.content?.originalText;
   const langChanged =
     ("sourceLanguage" in data && data.sourceLanguage !== work.sourceLanguage) ||
     ("targetLanguage" in data && data.targetLanguage !== work.targetLanguage);
 
   const updated = await db.work.update({ where: { id: workId }, data });
-  if (newOriginal !== undefined) {
-    await db.workContent.update({
-      where: { workId },
-      data: { originalText: newOriginal },
-    });
-  }
 
-  // 번역 재생성 (변경 시에만). runTranslation은 갱신된 DB 값을 읽는다.
-  let translationStatus = work.content?.translationStatus ?? "pending";
-  if (contentChanged || langChanged) {
-    const r = await runTranslation(workId);
-    translationStatus = r.translationStatus;
+  // 번역 언어가 바뀌면 모든 회차를 다시 번역한다.
+  if (langChanged) {
+    for (const ch of work.chapters) {
+      await runChapterTranslation(ch.id);
+    }
   }
 
   return NextResponse.json({
     success: true,
     isPublic: updated.isPublic,
     publicSlug: updated.publicSlug,
-    translationStatus,
   });
+}
+
+// DELETE /api/works/[workId] — 작품 삭제 (소유자만)
+// 회차/댓글/조회로그는 onDelete: Cascade로 함께 삭제된다.
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ workId: string }> },
+) {
+  const user = await getCurrentUser();
+  if (!user) return ApiError.unauthorized();
+
+  const { workId } = await params;
+  const work = await db.work.findUnique({ where: { id: workId } });
+  if (!work) return ApiError.workNotFound();
+  if (work.authorId !== user.userId) return ApiError.forbidden();
+
+  await db.work.delete({ where: { id: workId } });
+
+  return NextResponse.json({ success: true });
 }

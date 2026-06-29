@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Input";
-import { RichTextEditor } from "@/components/editor/RichTextEditor";
 
 type FormState = {
   title: string;
@@ -15,13 +14,7 @@ type FormState = {
   tags: string;
   sourceLanguage: string;
   targetLanguage: string;
-  originalText: string;
 };
-
-// 태그 제거 후 본문이 비었는지 확인 (HTML 빈 본문 판정)
-function isContentEmpty(html: string): boolean {
-  return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim() === "";
-}
 
 export function EditWorkForm({
   workId,
@@ -35,9 +28,8 @@ export function EditWorkForm({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 본문/언어가 바뀌면 저장 시 번역이 다시 생성된다 → 버튼 문구 안내
+  // 번역 언어가 바뀌면 저장 시 모든 회차가 다시 번역된다.
   const willRetranslate =
-    form.originalText !== initial.originalText ||
     form.sourceLanguage !== initial.sourceLanguage ||
     form.targetLanguage !== initial.targetLanguage;
 
@@ -51,10 +43,6 @@ export function EditWorkForm({
 
     if (!form.title.trim()) {
       setError("작품 제목을 입력해주세요.");
-      return;
-    }
-    if (isContentEmpty(form.originalText)) {
-      setError("원문 텍스트를 입력해주세요.");
       return;
     }
 
@@ -72,7 +60,6 @@ export function EditWorkForm({
           .filter(Boolean),
         sourceLanguage: form.sourceLanguage,
         targetLanguage: form.targetLanguage,
-        originalText: form.originalText,
       }),
     });
 
@@ -89,7 +76,7 @@ export function EditWorkForm({
   return (
     <main className="mx-auto max-w-3xl px-5 py-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold text-ink-main">작품 수정</h1>
+        <h1 className="text-2xl font-extrabold text-ink-main">작품 정보 수정</h1>
         <Link
           href={`/works/${workId}`}
           className="text-sm font-semibold text-ink-sub hover:text-plane-dark"
@@ -98,8 +85,8 @@ export function EditWorkForm({
         </Link>
       </div>
       <p className="mt-1 text-sm text-ink-sub">
-        작품 정보와 원문을 수정합니다. 본문이나 번역 언어를 바꾸면 저장 시 번역이
-        다시 생성됩니다.
+        작품 정보를 수정합니다. 본문은 각 회차에서 수정할 수 있습니다. 번역 언어를
+        바꾸면 저장 시 모든 회차가 다시 번역됩니다.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-6">
@@ -144,19 +131,7 @@ export function EditWorkForm({
         </Card>
 
         <Card className="flex flex-col gap-4">
-          <h2 className="font-bold text-ink-main">2. 원문 텍스트</h2>
-          <p className="-mt-2 text-sm text-ink-sub">
-            볼드·제목·목록 등 서식과 이미지를 사용할 수 있습니다. 서식은 번역본에도
-            그대로 유지됩니다.
-          </p>
-          <RichTextEditor
-            value={form.originalText}
-            onChange={(html) => update("originalText", html)}
-          />
-        </Card>
-
-        <Card className="flex flex-col gap-4">
-          <h2 className="font-bold text-ink-main">3. 번역 언어</h2>
+          <h2 className="font-bold text-ink-main">2. 번역 언어</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="원문 언어" htmlFor="sourceLanguage">
               <select
