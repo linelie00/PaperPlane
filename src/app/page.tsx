@@ -8,7 +8,7 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen">
-      <Header nickname={user?.nickname} />
+      <Header nickname={user?.nickname} image={user?.image} />
 
       {/* Hero Section — 캐치프레이즈 필수 (docs/08_UI_DESIGN_GUIDE.md) */}
       <section className="relative overflow-hidden">

@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
     userId: user.id,
     email: user.email,
     nickname: user.nickname,
+    image: user.image,
   });
   await setSessionCookie(token);
 

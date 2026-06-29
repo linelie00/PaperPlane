@@ -9,6 +9,7 @@ export type SessionPayload = {
   userId: string;
   email: string;
   nickname: string;
+  image: string | null;
 };
 
 function getSecretKey(): Uint8Array {
@@ -48,6 +49,7 @@ export async function verifyToken(
       userId: payload.userId as string,
       email: payload.email as string,
       nickname: payload.nickname as string,
+      image: (payload.image as string | null) ?? null,
     };
   } catch {
     return null;

@@ -98,6 +98,7 @@ export async function GET(
     userId: user.id,
     email: user.email,
     nickname: user.nickname,
+    image: user.image,
   });
   await setSessionCookie(token);
 

@@ -14,7 +14,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen">
-      <Header nickname={user.nickname} />
+      <Header nickname={user.nickname} image={user.image} />
 
       <main className="mx-auto max-w-6xl px-5 py-10">
         <div className="flex flex-wrap items-center justify-between gap-4">

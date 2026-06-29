@@ -74,6 +74,11 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// 프로필 이미지 URL 허용 여부 (자체 업로드 경로 또는 외부 http(s)만)
+export function isSafeImageUrl(url: string): boolean {
+  return /^\/uploads\//.test(url) || /^https?:\/\//i.test(url);
+}
+
 // 요청 헤더에서 클라이언트 IP를 추출한다.
 export function getClientIp(headers: Headers): string | null {
   const forwarded = headers.get("x-forwarded-for");

@@ -6,9 +6,11 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { SocialButtons } from "@/components/auth/SocialButtons";
+import { AvatarPicker } from "@/components/auth/AvatarPicker";
 
 export default function SignupPage() {
   const [nickname, setNickname] = useState("");
+  const [image, setImage] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -39,7 +41,7 @@ export default function SignupPage() {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nickname, email, password }),
+      body: JSON.stringify({ nickname, email, password, image }),
     });
 
     if (res.ok) {
@@ -115,6 +117,12 @@ export default function SignupPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-semibold text-ink-sub">
+              프로필 사진
+            </span>
+            <AvatarPicker value={image} name={nickname} onChange={setImage} />
+          </div>
           <Field label="닉네임" htmlFor="nickname">
             <Input
               id="nickname"

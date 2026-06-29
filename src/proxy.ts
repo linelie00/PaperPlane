@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 const COOKIE_NAME = "pp_session";
 
 // 로그인 사용자 보호 라우팅 (docs/02_USER_FLOW.md)
-const PROTECTED_PREFIXES = ["/dashboard", "/works"];
+const PROTECTED_PREFIXES = ["/dashboard", "/works", "/profile"];
 
 async function isValidToken(token: string | undefined): Promise<boolean> {
   if (!token) return false;
@@ -35,5 +35,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/works/:path*"],
+  matcher: ["/dashboard/:path*", "/works/:path*", "/profile/:path*"],
 };

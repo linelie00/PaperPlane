@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 import { LinkButton } from "@/components/ui/Button";
+import { Avatar } from "@/components/ui/Avatar";
 
 type HeaderProps = {
   // 로그인 사용자일 때만 전달
   nickname?: string | null;
+  image?: string | null;
 };
 
-export function Header({ nickname }: HeaderProps) {
+export function Header({ nickname, image }: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-paper-border/60 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
@@ -33,9 +35,16 @@ export function Header({ nickname }: HeaderProps) {
               >
                 내 작품
               </Link>
-              <span className="hidden text-sm text-ink-muted sm:block">
-                {nickname} 님
-              </span>
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 transition hover:bg-sky-pale"
+                title="프로필 설정"
+              >
+                <Avatar src={image} name={nickname ?? "?"} size={32} />
+                <span className="hidden text-sm font-semibold text-ink-sub sm:block">
+                  {nickname} 님
+                </span>
+              </Link>
               <LogoutButton />
             </>
           ) : (

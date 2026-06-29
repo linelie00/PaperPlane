@@ -13,7 +13,7 @@ export default async function WorksLayout({
 
   return (
     <div className="min-h-screen">
-      <Header nickname={user.nickname} />
+      <Header nickname={user.nickname} image={user.image} />
       {children}
     </div>
   );

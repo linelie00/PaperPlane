@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
-import { isValidEmail } from "@/lib/utils";
+import { isValidEmail, isSafeImageUrl } from "@/lib/utils";
 import { issueAndSendVerification } from "@/lib/verification";
 
 // POST /api/auth/signup — 회원가입 (docs/04_API_SPEC.md)
 export async function POST(req: NextRequest) {
-  let body: { email?: string; password?: string; nickname?: string };
+  let body: {
+    email?: string;
+    password?: string;
+    nickname?: string;
+    image?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -16,6 +21,9 @@ export async function POST(req: NextRequest) {
 
   const email = body.email?.trim().toLowerCase();
   const { password, nickname } = body;
+  // 프로필 사진(선택) — 허용된 URL만 저장
+  const image =
+    body.image && isSafeImageUrl(body.image) ? body.image : null;
 
   if (!email || !password || !nickname?.trim()) {
     return errorResponse("MISSING_FIELD", "필수 입력값이 누락되었습니다.", 400);
@@ -41,6 +49,7 @@ export async function POST(req: NextRequest) {
       email,
       passwordHash: await hashPassword(password),
       nickname: nickname.trim(),
+      image,
     },
   });
 
