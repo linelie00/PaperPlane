@@ -28,6 +28,12 @@ export function hashIp(ip: string | null | undefined): string | null {
   return sha256(`${salt}:${ip}`);
 }
 
+// 익명 댓글 삭제용 비밀번호 해시 (4자리 등 짧은 값이라 솔트만 추가)
+export function hashDeletePassword(pw: string): string {
+  const salt = process.env.AUTH_SECRET ?? "paperplane";
+  return sha256(`${salt}:cmt:${pw}`);
+}
+
 // 댓글 입력의 XSS 방지를 위해 HTML 태그를 제거한다. (docs/04_API_SPEC.md)
 export function sanitizeText(input: string): string {
   return input

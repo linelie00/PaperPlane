@@ -35,6 +35,24 @@ export type CommentItem = {
   nickname: string;
   content: string;
   createdAt: string;
+  parentId: string | null;
+  hasPassword: boolean; // 익명 작성자가 비밀번호로 삭제 가능한지
+  replies: CommentItem[];
+};
+
+// 창작자 화면용 댓글 (회차 정보 + 답글 중첩)
+export type CreatorComment = {
+  id: string;
+  nickname: string;
+  content: string;
+  createdAt: string;
+  chapterOrder: number | null;
+  replies: {
+    id: string;
+    nickname: string;
+    content: string;
+    createdAt: string;
+  }[];
 };
 
 export type WorkDetail = {
@@ -48,8 +66,9 @@ export type WorkDetail = {
   isPublic: boolean;
   publicSlug: string | null;
   viewCount: number;
+  commentCount: number;
   chapters: ChapterItem[];
-  comments: CommentItem[];
+  comments: CreatorComment[];
 };
 
 export type DashboardStats = {

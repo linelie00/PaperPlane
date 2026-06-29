@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { CommentSection } from "./CommentSection";
 
 const LANG_LABEL: Record<string, string> = {
   ko: "한국어",
@@ -24,9 +23,8 @@ export default async function ReaderListPage({
       chapters: {
         where: { isPublic: true, translationStatus: "completed" },
         orderBy: { order: "asc" },
-        select: { order: true, title: true },
+        select: { order: true, title: true, _count: { select: { comments: true } } },
       },
-      comments: { orderBy: { createdAt: "desc" } },
     },
   });
 
@@ -67,22 +65,17 @@ export default async function ReaderListPage({
                   </span>
                   <span className="font-bold text-ink-main">{ch.title}</span>
                 </span>
-                <span className="text-plane-primary">→</span>
+                <span className="flex items-center gap-3 text-sm text-ink-muted">
+                  {ch._count.comments > 0 && (
+                    <span>댓글 {ch._count.comments}</span>
+                  )}
+                  <span className="text-plane-primary">→</span>
+                </span>
               </Link>
             </li>
           ))}
         </ul>
       </section>
-
-      <CommentSection
-        workId={work.id}
-        initialComments={work.comments.map((c) => ({
-          id: c.id,
-          nickname: c.nickname,
-          content: c.content,
-          createdAt: c.createdAt.toISOString(),
-        }))}
-      />
     </main>
   );
 }

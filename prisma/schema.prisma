@@ -87,20 +87,29 @@ model Chapter {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   work              Work              @relation(fields: [workId], references: [id], onDelete: Cascade)
+  comments          Comment[]
 
   @@unique([workId, order])
   @@index([workId])
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  workId    String
-  nickname  String
-  content   String
-  createdAt DateTime @default(now())
-  work      Work     @relation(fields: [workId], references: [id], onDelete: Cascade)
+  id                 String    @id @default(cuid())
+  workId             String
+  chapterId          String? // 회차별 댓글 (null = 작품 단위 레거시)
+  parentId           String? // 대댓글이면 부모 댓글 id
+  nickname           String
+  content            String
+  deletePasswordHash String? // 익명 작성자가 본인 댓글을 삭제할 때 사용
+  createdAt          DateTime  @default(now())
+  work               Work      @relation(fields: [workId], references: [id], onDelete: Cascade)
+  chapter            Chapter?  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  parent             Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies            Comment[] @relation("CommentReplies")
 
   @@index([workId])
+  @@index([chapterId])
+  @@index([parentId])
 }
 
 model ViewLog {

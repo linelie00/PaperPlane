@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { getClientIp, hashIp } from "@/lib/utils";
+import { getChapterCommentTree } from "@/lib/comments";
+import { CommentSection } from "../CommentSection";
 
 const LANG_LABEL: Record<string, string> = {
   ko: "한국어",
@@ -52,6 +54,8 @@ export default async function ChapterReaderPage({
   const chapter = publicChapters[idx];
   const prev = publicChapters[idx - 1];
   const next = publicChapters[idx + 1];
+
+  const comments = await getChapterCommentTree(chapter.id);
 
   // 조회수 1 증가 + 유입 정보 저장 (작품 단위, docs/02_USER_FLOW.md)
   const headerList = await headers();
@@ -119,6 +123,8 @@ export default async function ChapterReaderPage({
           <span />
         )}
       </nav>
+
+      <CommentSection chapterId={chapter.id} initialComments={comments} />
     </main>
   );
 }

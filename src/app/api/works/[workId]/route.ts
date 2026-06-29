@@ -19,13 +19,25 @@ export async function GET(
     where: { id: workId },
     include: {
       chapters: { orderBy: { order: "asc" } },
-      comments: { orderBy: { createdAt: "desc" } },
+      comments: {
+        orderBy: { createdAt: "asc" },
+        include: { chapter: { select: { order: true } } },
+      },
       _count: { select: { viewLogs: true } },
     },
   });
 
   if (!work) return ApiError.workNotFound();
   if (work.authorId !== user.userId) return ApiError.forbidden();
+
+  // 댓글을 부모/답글 트리(1단계)로 구성한다.
+  const repliesByParent = new Map<string, typeof work.comments>();
+  for (const c of work.comments) {
+    if (!c.parentId) continue;
+    const arr = repliesByParent.get(c.parentId) ?? [];
+    arr.push(c);
+    repliesByParent.set(c.parentId, arr);
+  }
 
   const result: WorkDetail = {
     id: work.id,
@@ -38,6 +50,7 @@ export async function GET(
     isPublic: work.isPublic,
     publicSlug: work.publicSlug,
     viewCount: work._count.viewLogs,
+    commentCount: work.comments.length,
     chapters: work.chapters.map((c) => ({
       id: c.id,
       order: c.order,
@@ -47,12 +60,22 @@ export async function GET(
       originalText: c.originalText,
       translatedText: c.translatedText,
     })),
-    comments: work.comments.map((c) => ({
-      id: c.id,
-      nickname: c.nickname,
-      content: c.content,
-      createdAt: c.createdAt.toISOString(),
-    })),
+    comments: work.comments
+      .filter((c) => !c.parentId)
+      .reverse()
+      .map((c) => ({
+        id: c.id,
+        nickname: c.nickname,
+        content: c.content,
+        createdAt: c.createdAt.toISOString(),
+        chapterOrder: c.chapter?.order ?? null,
+        replies: (repliesByParent.get(c.id) ?? []).map((r) => ({
+          id: r.id,
+          nickname: r.nickname,
+          content: r.content,
+          createdAt: r.createdAt.toISOString(),
+        })),
+      })),
   };
 
   return NextResponse.json(result);

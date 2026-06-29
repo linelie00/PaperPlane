@@ -110,7 +110,7 @@ export function WorkDetailView({
           </div>
           <div className="text-right text-sm text-ink-sub">
             <p>조회수 {work.viewCount}</p>
-            <p>댓글 {work.comments.length}</p>
+            <p>댓글 {work.commentCount}</p>
           </div>
         </div>
       </div>
@@ -190,9 +190,9 @@ export function WorkDetailView({
         </div>
       )}
 
-      {/* 댓글 */}
+      {/* 댓글 (창작자: 모든 댓글 삭제 가능) */}
       <Card className="mt-8">
-        <h2 className="font-bold text-ink-main">댓글 {work.comments.length}</h2>
+        <h2 className="font-bold text-ink-main">댓글 {work.commentCount}</h2>
         {work.comments.length === 0 ? (
           <p className="mt-3 text-sm text-ink-muted">아직 댓글이 없습니다.</p>
         ) : (
@@ -202,19 +202,84 @@ export function WorkDetailView({
                 key={c.id}
                 className="border-b border-paper-border pb-3 last:border-0"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-ink-main">{c.nickname}</span>
-                  <span className="text-xs text-ink-muted">
-                    {c.createdAt.slice(0, 10)}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-ink-sub">{c.content}</p>
+                <CreatorCommentRow comment={c} />
+                {c.replies.length > 0 && (
+                  <ul className="mt-3 space-y-3 border-l-2 border-sky-pale pl-4">
+                    {c.replies.map((r) => (
+                      <li key={r.id}>
+                        <CreatorCommentRow comment={r} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
         )}
       </Card>
     </main>
+  );
+}
+
+// 창작자용 댓글 행 (회차 표시 + 삭제). 답글에는 chapterOrder가 없다.
+function CreatorCommentRow({
+  comment,
+}: {
+  comment: {
+    id: string;
+    nickname: string;
+    content: string;
+    createdAt: string;
+    chapterOrder?: number | null;
+  };
+}) {
+  const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+
+  async function handleDelete() {
+    if (!confirm("이 댓글을 삭제할까요? (답글이 있으면 함께 삭제됩니다)")) return;
+    setDeleting(true);
+    const res = await fetch(`/api/comments/${comment.id}`, { method: "DELETE" });
+    if (res.ok) {
+      setDeleted(true);
+      router.refresh();
+    } else {
+      setDeleting(false);
+      alert("삭제에 실패했습니다.");
+    }
+  }
+
+  if (deleted) return null;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-ink-main">{comment.nickname}</span>
+          {comment.chapterOrder != null && (
+            <span className="rounded-full bg-sky-pale px-2 py-0.5 text-xs text-plane-dark">
+              {comment.chapterOrder}화
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-ink-muted">
+            {comment.createdAt.slice(0, 10)}
+          </span>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="text-xs font-semibold text-ink-muted hover:text-error disabled:opacity-50"
+          >
+            삭제
+          </button>
+        </div>
+      </div>
+      <p className="mt-1 whitespace-pre-wrap text-sm text-ink-sub">
+        {comment.content}
+      </p>
+    </div>
   );
 }
 
