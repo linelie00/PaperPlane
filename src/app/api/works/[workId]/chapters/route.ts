@@ -25,7 +25,7 @@ export async function POST(
   if (!work) return ApiError.workNotFound();
   if (work.authorId !== user.userId) return ApiError.forbidden();
 
-  let body: { title?: string; originalText?: string };
+  let body: { title?: string; originalText?: string; isPublic?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -57,8 +57,18 @@ export async function POST(
 
   const { translationStatus } = await runChapterTranslation(chapter.id);
 
+  // 공개 요청 시: 번역이 완료된 경우에만 공개로 설정한다.
+  let isPublic = false;
+  if (body.isPublic && translationStatus === "completed") {
+    await db.chapter.update({
+      where: { id: chapter.id },
+      data: { isPublic: true },
+    });
+    isPublic = true;
+  }
+
   return NextResponse.json(
-    { chapterId: chapter.id, order: chapter.order, translationStatus },
+    { chapterId: chapter.id, order: chapter.order, translationStatus, isPublic },
     { status: 201 },
   );
 }

@@ -28,6 +28,7 @@ export default async function NewChapterPage({
       mode="create"
       initialTitle={`${nextOrder}화`}
       initialText=""
+      initialPublic={false}
     />
   );
 }

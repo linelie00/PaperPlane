@@ -18,6 +18,7 @@ type Props = {
   chapterId?: string;
   initialTitle: string;
   initialText: string;
+  initialPublic: boolean;
 };
 
 export function ChapterForm({
@@ -26,10 +27,12 @@ export function ChapterForm({
   chapterId,
   initialTitle,
   initialText,
+  initialPublic,
 }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [originalText, setOriginalText] = useState(initialText);
+  const [isPublic, setIsPublic] = useState(initialPublic);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -53,11 +56,14 @@ export function ChapterForm({
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, originalText }),
+      body: JSON.stringify({ title, originalText, isPublic }),
     });
 
     if (res.ok) {
-      router.push(`/works/${workId}`);
+      const data = await res.json().catch(() => null);
+      // 저장 후 회차 보기(원문/번역문 비교) 페이지로 이동한다.
+      const id = mode === "create" ? data?.chapterId : chapterId;
+      router.push(id ? `/works/${workId}/chapters/${id}` : `/works/${workId}`);
       router.refresh();
     } else {
       const data = await res.json().catch(() => null);
@@ -102,6 +108,31 @@ export function ChapterForm({
         <Card className="flex flex-col gap-4">
           <h2 className="font-bold text-ink-main">본문</h2>
           <RichTextEditor value={originalText} onChange={setOriginalText} />
+        </Card>
+
+        <Card className="flex items-start justify-between gap-4">
+          <div>
+            <p className="font-bold text-ink-main">회차 공개</p>
+            <p className="mt-1 text-sm text-ink-sub">
+              켜면 번역 완료 후 이 회차를 독자가 읽을 수 있습니다. (작품도 공개
+              상태여야 노출됩니다)
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isPublic}
+            onClick={() => setIsPublic((v) => !v)}
+            className={`relative mt-1 h-7 w-12 shrink-0 rounded-full transition ${
+              isPublic ? "bg-plane-primary" : "bg-paper-border"
+            }`}
+          >
+            <span
+              className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${
+                isPublic ? "left-6" : "left-1"
+              }`}
+            />
+          </button>
         </Card>
 
         {error && <p className="text-sm font-medium text-error">{error}</p>}

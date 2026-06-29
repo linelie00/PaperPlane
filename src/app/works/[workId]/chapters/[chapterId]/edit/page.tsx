@@ -27,6 +27,7 @@ export default async function EditChapterPage({
       chapterId={chapter.id}
       initialTitle={chapter.title}
       initialText={chapter.originalText}
+      initialPublic={chapter.isPublic}
     />
   );
 }
