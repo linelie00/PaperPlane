@@ -350,20 +350,24 @@ function ChapterRow({
 
   return (
     <Card className="flex flex-wrap items-center justify-between gap-3">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-plane-dark">
-            {chapter.order}화
+      {/* 회차 제목 클릭 → 회차 보기(원문/번역문) */}
+      <Link
+        href={`/works/${workId}/chapters/${chapter.id}`}
+        className="group flex min-w-0 flex-1 items-center gap-2"
+      >
+        <span className="text-xs font-bold text-plane-dark">
+          {chapter.order}화
+        </span>
+        <span className="truncate font-bold text-ink-main group-hover:text-plane-dark group-hover:underline">
+          {chapter.title}
+        </span>
+        <StatusBadge status={status} />
+        {isPublic && (
+          <span className="rounded-full bg-sky-soft px-2 py-0.5 text-xs text-plane-dark">
+            공개
           </span>
-          <span className="truncate font-bold text-ink-main">{chapter.title}</span>
-          <StatusBadge status={status} />
-          {isPublic && (
-            <span className="rounded-full bg-sky-soft px-2 py-0.5 text-xs text-plane-dark">
-              공개
-            </span>
-          )}
-        </div>
-      </div>
+        )}
+      </Link>
       <div className="flex flex-wrap items-center gap-2">
         {readUrl && (
           <a
