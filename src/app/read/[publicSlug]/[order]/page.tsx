@@ -23,11 +23,12 @@ export async function generateMetadata({
     select: {
       title: true,
       isPublic: true,
+      coverImage: true,
       author: { select: { nickname: true, image: true, coverImage: true } },
       chapters: {
         where: { isPublic: true, order: Number(order) },
         take: 1,
-        select: { title: true, originalText: true },
+        select: { title: true, originalText: true, coverImage: true },
       },
     },
   });
@@ -43,7 +44,9 @@ export async function generateMetadata({
     `${work.author.nickname}의 작품 「${work.title}」을 PaperPlane에서 읽어보세요.`,
   );
   const image = absoluteUrl(
-    firstImageSrc(chapter.originalText) ??
+    chapter.coverImage ??
+      firstImageSrc(chapter.originalText) ??
+      work.coverImage ??
       work.author.coverImage ??
       work.author.image,
   );

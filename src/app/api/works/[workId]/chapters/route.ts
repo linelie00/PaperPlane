@@ -6,6 +6,7 @@ import {
   MAX_ORIGINAL_TEXT_LENGTH,
   sanitizeHtml,
   isHtmlEmpty,
+  isSafeImageUrl,
 } from "@/lib/utils";
 import { runChapterTranslation } from "@/lib/translation";
 
@@ -25,12 +26,21 @@ export async function POST(
   if (!work) return ApiError.workNotFound();
   if (work.authorId !== user.userId) return ApiError.forbidden();
 
-  let body: { title?: string; originalText?: string; isPublic?: boolean };
+  let body: {
+    title?: string;
+    originalText?: string;
+    isPublic?: boolean;
+    coverImage?: string | null;
+  };
   try {
     body = await req.json();
   } catch {
     return errorResponse("INVALID_PAYLOAD", "잘못된 요청입니다.", 400);
   }
+  const coverImage =
+    typeof body.coverImage === "string" && isSafeImageUrl(body.coverImage)
+      ? body.coverImage
+      : null;
 
   const originalText = sanitizeHtml(body.originalText ?? "");
   if (isHtmlEmpty(originalText)) {
@@ -51,6 +61,7 @@ export async function POST(
       order: nextOrder,
       title: body.title?.trim() || `${nextOrder}화`,
       originalText,
+      coverImage,
       translationStatus: "pending",
     },
   });

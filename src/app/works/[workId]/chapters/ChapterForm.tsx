@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
+import { ImagePicker } from "@/components/ui/ImagePicker";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 
 function isContentEmpty(html: string): boolean {
@@ -19,6 +20,7 @@ type Props = {
   initialTitle: string;
   initialText: string;
   initialPublic: boolean;
+  initialCover: string | null;
 };
 
 export function ChapterForm({
@@ -28,11 +30,13 @@ export function ChapterForm({
   initialTitle,
   initialText,
   initialPublic,
+  initialCover,
 }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [originalText, setOriginalText] = useState(initialText);
   const [isPublic, setIsPublic] = useState(initialPublic);
+  const [coverImage, setCoverImage] = useState<string | null>(initialCover);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -56,7 +60,7 @@ export function ChapterForm({
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, originalText, isPublic }),
+      body: JSON.stringify({ title, originalText, isPublic, coverImage }),
     });
 
     if (res.ok) {
@@ -103,6 +107,12 @@ export function ChapterForm({
               placeholder="예) 1화: 시작"
             />
           </Field>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-semibold text-ink-sub">
+              회차 메인 이미지
+            </span>
+            <ImagePicker value={coverImage} onChange={setCoverImage} />
+          </div>
         </Card>
 
         <Card className="flex flex-col gap-4">

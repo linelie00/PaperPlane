@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
+import { CoverImage } from "@/components/ui/CoverImage";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -47,8 +48,11 @@ export default async function WorksPage() {
           <div className="mt-8 grid gap-4">
             {works.map((w) => (
               <Link key={w.id} href={`/works/${w.id}`}>
-                <Card className="transition hover:-translate-y-0.5 hover:shadow-plane">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                <Card className="flex items-start gap-4 transition hover:-translate-y-0.5 hover:shadow-plane">
+                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl">
+                    <CoverImage src={w.coverImage} alt={w.title} />
+                  </div>
+                  <div className="flex flex-1 flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-lg font-bold text-ink-main">

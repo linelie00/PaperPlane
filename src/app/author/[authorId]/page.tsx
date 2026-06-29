@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Avatar } from "@/components/ui/Avatar";
+import { CoverImage } from "@/components/ui/CoverImage";
 import { absoluteUrl, plainExcerpt } from "@/lib/meta";
 
 const LANG_LABEL: Record<string, string> = {
@@ -79,6 +80,7 @@ export default async function AuthorHomePage({
       genre: true,
       targetLanguage: true,
       publicSlug: true,
+      coverImage: true,
       _count: {
         select: {
           chapters: { where: { isPublic: true } },
@@ -132,24 +134,29 @@ export default async function AuthorHomePage({
                 <Link
                   key={w.publicSlug}
                   href={`/read/${w.publicSlug}`}
-                  className="flex flex-col rounded-2xl border border-paper-border bg-white p-5 transition hover:-translate-y-0.5 hover:border-plane-light hover:shadow-plane"
+                  className="flex flex-col overflow-hidden rounded-2xl border border-paper-border bg-white transition hover:-translate-y-0.5 hover:border-plane-light hover:shadow-plane"
                 >
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-ink-main">{w.title}</h3>
-                    <span className="rounded-full bg-sky-pale px-2 py-0.5 text-xs font-semibold text-plane-dark">
-                      {w._count.chapters}화
-                    </span>
+                  <div className="aspect-[16/9] w-full">
+                    <CoverImage src={w.coverImage} alt={w.title} />
                   </div>
-                  {w.description && (
-                    <p className="mt-1 line-clamp-2 text-sm text-ink-sub">
-                      {w.description}
-                    </p>
-                  )}
-                  <div className="mt-3 flex gap-2 text-xs text-ink-muted">
-                    {w.genre && <span>{w.genre}</span>}
-                    <span>
-                      {LANG_LABEL[w.targetLanguage] ?? w.targetLanguage}
-                    </span>
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-ink-main">{w.title}</h3>
+                      <span className="rounded-full bg-sky-pale px-2 py-0.5 text-xs font-semibold text-plane-dark">
+                        {w._count.chapters}화
+                      </span>
+                    </div>
+                    {w.description && (
+                      <p className="mt-1 line-clamp-2 text-sm text-ink-sub">
+                        {w.description}
+                      </p>
+                    )}
+                    <div className="mt-3 flex gap-2 text-xs text-ink-muted">
+                      {w.genre && <span>{w.genre}</span>}
+                      <span>
+                        {LANG_LABEL[w.targetLanguage] ?? w.targetLanguage}
+                      </span>
+                    </div>
                   </div>
                 </Link>
               ))}

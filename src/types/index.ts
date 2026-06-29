@@ -25,6 +25,7 @@ export type ChapterItem = {
   order: number;
   title: string;
   isPublic: boolean;
+  coverImage: string | null;
   translationStatus: TranslationStatus;
   originalText: string;
   translatedText: string | null;
@@ -63,6 +64,7 @@ export type WorkDetail = {
   tags: string[];
   sourceLanguage: string;
   targetLanguage: string;
+  coverImage: string | null;
   isPublic: boolean;
   publicSlug: string | null;
   viewCount: number;

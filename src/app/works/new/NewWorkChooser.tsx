@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Input";
+import { ImagePicker } from "@/components/ui/ImagePicker";
 
 type WorkOption = { id: string; title: string; chapterCount: number };
 type Mode = "new" | "existing";
@@ -137,6 +138,7 @@ function NewWorkForm() {
     sourceLanguage: "ko",
     targetLanguage: "en",
   });
+  const [coverImage, setCoverImage] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -166,6 +168,7 @@ function NewWorkForm() {
           .filter(Boolean),
         sourceLanguage: form.sourceLanguage,
         targetLanguage: form.targetLanguage,
+        coverImage,
       }),
     });
 
@@ -184,6 +187,10 @@ function NewWorkForm() {
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <Card className="flex flex-col gap-4">
         <h2 className="font-bold text-ink-main">1. 작품 정보</h2>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-semibold text-ink-sub">메인 이미지</span>
+          <ImagePicker value={coverImage} onChange={setCoverImage} />
+        </div>
         <Field label="작품 제목" htmlFor="title">
           <Input
             id="title"

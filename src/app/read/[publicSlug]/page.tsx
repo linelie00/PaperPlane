@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { AuthorBadge } from "@/components/AuthorBadge";
+import { CoverImage } from "@/components/ui/CoverImage";
 import { absoluteUrl, firstImageSrc, plainExcerpt } from "@/lib/meta";
 
 const LANG_LABEL: Record<string, string> = {
@@ -25,6 +26,7 @@ export async function generateMetadata({
       title: true,
       description: true,
       isPublic: true,
+      coverImage: true,
       author: { select: { nickname: true, image: true, coverImage: true } },
       chapters: {
         where: { isPublic: true },
@@ -44,7 +46,8 @@ export async function generateMetadata({
     `${work.author.nickname}의 작품을 PaperPlane에서 읽어보세요.`,
   );
   const image = absoluteUrl(
-    firstImageSrc(work.chapters[0]?.originalText) ??
+    work.coverImage ??
+      firstImageSrc(work.chapters[0]?.originalText) ??
       work.author.coverImage ??
       work.author.image,
   );
@@ -83,7 +86,12 @@ export default async function ReaderListPage({
       chapters: {
         where: { isPublic: true },
         orderBy: { order: "asc" },
-        select: { order: true, title: true, _count: { select: { comments: true } } },
+        select: {
+          order: true,
+          title: true,
+          coverImage: true,
+          _count: { select: { comments: true } },
+        },
       },
     },
   });
@@ -97,7 +105,11 @@ export default async function ReaderListPage({
 
   return (
     <main className="mx-auto max-w-[760px] px-5 py-12">
-      <p className="text-sm font-semibold text-plane-dark">
+      {/* 작품 메인 이미지 */}
+      <div className="aspect-[16/9] w-full overflow-hidden rounded-3xl">
+        <CoverImage src={work.coverImage} alt={work.title} />
+      </div>
+      <p className="mt-6 text-sm font-semibold text-plane-dark">
         <span className="text-plane-primary">✈</span> PaperPlane ·{" "}
         {LANG_LABEL[work.targetLanguage] ?? work.targetLanguage}
       </p>
@@ -123,15 +135,18 @@ export default async function ReaderListPage({
             <li key={ch.order}>
               <Link
                 href={`/read/${publicSlug}/${ch.order}`}
-                className="flex items-center justify-between rounded-2xl border border-paper-border bg-white px-5 py-4 transition hover:-translate-y-0.5 hover:border-plane-light hover:shadow-plane"
+                className="flex items-center gap-4 rounded-2xl border border-paper-border bg-white p-3 transition hover:-translate-y-0.5 hover:border-plane-light hover:shadow-plane"
               >
-                <span className="flex items-center gap-3">
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl">
+                  <CoverImage src={ch.coverImage} alt={ch.title} />
+                </div>
+                <span className="flex flex-1 items-center gap-3">
                   <span className="text-xs font-bold text-plane-dark">
                     {ch.order}화
                   </span>
                   <span className="font-bold text-ink-main">{ch.title}</span>
                 </span>
-                <span className="flex items-center gap-3 text-sm text-ink-muted">
+                <span className="flex items-center gap-3 pr-2 text-sm text-ink-muted">
                   {ch._count.comments > 0 && (
                     <span>댓글 {ch._count.comments}</span>
                   )}

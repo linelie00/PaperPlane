@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
-import { generatePublicSlug } from "@/lib/utils";
+import { generatePublicSlug, isSafeImageUrl } from "@/lib/utils";
 import { runChapterTranslation } from "@/lib/translation";
 import type { WorkDetail } from "@/types";
 
@@ -47,6 +47,7 @@ export async function GET(
     tags: work.tags,
     sourceLanguage: work.sourceLanguage,
     targetLanguage: work.targetLanguage,
+    coverImage: work.coverImage,
     isPublic: work.isPublic,
     publicSlug: work.publicSlug,
     viewCount: work._count.viewLogs,
@@ -56,6 +57,7 @@ export async function GET(
       order: c.order,
       title: c.title,
       isPublic: c.isPublic,
+      coverImage: c.coverImage,
       translationStatus: c.translationStatus,
       originalText: c.originalText,
       translatedText: c.translatedText,
@@ -106,6 +108,7 @@ export async function PATCH(
     tags?: string[];
     sourceLanguage?: string;
     targetLanguage?: string;
+    coverImage?: string | null;
   };
   try {
     body = await req.json();
@@ -124,6 +127,12 @@ export async function PATCH(
   if (Array.isArray(body.tags)) data.tags = body.tags;
   if (typeof body.sourceLanguage === "string") data.sourceLanguage = body.sourceLanguage;
   if (typeof body.targetLanguage === "string") data.targetLanguage = body.targetLanguage;
+  // 메인 이미지: URL(자체 업로드/외부) 또는 null(제거)
+  if (body.coverImage === null) {
+    data.coverImage = null;
+  } else if (typeof body.coverImage === "string" && isSafeImageUrl(body.coverImage)) {
+    data.coverImage = body.coverImage;
+  }
 
   if (typeof body.isPublic === "boolean") {
     data.isPublic = body.isPublic;

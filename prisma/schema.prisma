@@ -65,6 +65,7 @@ model Work {
   tags           String[]     @default([])
   sourceLanguage String       @default("ko")
   targetLanguage String       @default("en")
+  coverImage     String? // 작품 메인 이미지 (선택)
   isPublic       Boolean      @default(false)
   publicSlug     String?      @unique
   createdAt      DateTime     @default(now())
@@ -85,6 +86,7 @@ model Chapter {
   originalText      String
   translatedText    String?
   translationStatus TranslationStatus @default(pending)
+  coverImage        String? // 회차 메인 이미지 (선택)
   isPublic          Boolean           @default(false)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { CoverImage } from "@/components/ui/CoverImage";
 import type { WorkDetail, ChapterItem } from "@/types";
 
 export function WorkDetailView({
@@ -69,7 +70,11 @@ export function WorkDetailView({
     <main className="mx-auto max-w-5xl px-5 py-10">
       {/* 헤더 */}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="flex items-start gap-4">
+          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl">
+            <CoverImage src={work.coverImage} alt={work.title} />
+          </div>
+          <div>
           <h1 className="text-2xl font-extrabold text-ink-main">{work.title}</h1>
           {work.description && (
             <p className="mt-2 max-w-2xl text-ink-sub">{work.description}</p>
@@ -91,6 +96,7 @@ export function WorkDetailView({
               ))}
             </div>
           )}
+          </div>
         </div>
         <div className="flex flex-col items-end gap-3">
           <div className="flex gap-2">
@@ -352,8 +358,11 @@ function ChapterRow({
       {/* 회차 제목 클릭 → 회차 보기(원문/번역문) */}
       <Link
         href={`/works/${workId}/chapters/${chapter.id}`}
-        className="group flex min-w-0 flex-1 items-center gap-2"
+        className="group flex min-w-0 flex-1 items-center gap-3"
       >
+        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+          <CoverImage src={chapter.coverImage} alt={chapter.title} />
+        </div>
         <span className="text-xs font-bold text-plane-dark">
           {chapter.order}화
         </span>

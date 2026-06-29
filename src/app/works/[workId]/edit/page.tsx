@@ -28,6 +28,7 @@ export default async function EditWorkPage({
         tags: work.tags.join(", "),
         sourceLanguage: work.sourceLanguage,
         targetLanguage: work.targetLanguage,
+        coverImage: work.coverImage,
       }}
     />
   );

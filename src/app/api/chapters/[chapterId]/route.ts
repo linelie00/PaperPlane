@@ -6,6 +6,7 @@ import {
   MAX_ORIGINAL_TEXT_LENGTH,
   sanitizeHtml,
   isHtmlEmpty,
+  isSafeImageUrl,
 } from "@/lib/utils";
 import { runChapterTranslation } from "@/lib/translation";
 
@@ -46,7 +47,12 @@ export async function PATCH(
   const { chapter, error } = await getOwnedChapter(chapterId, user.userId);
   if (error || !chapter) return error ?? ApiError.workNotFound();
 
-  let body: { title?: string; originalText?: string; isPublic?: boolean };
+  let body: {
+    title?: string;
+    originalText?: string;
+    isPublic?: boolean;
+    coverImage?: string | null;
+  };
   try {
     body = await req.json();
   } catch {
@@ -56,6 +62,11 @@ export async function PATCH(
   const data: Record<string, unknown> = {};
   if (typeof body.title === "string" && body.title.trim()) {
     data.title = body.title.trim();
+  }
+  if (body.coverImage === null) {
+    data.coverImage = null;
+  } else if (typeof body.coverImage === "string" && isSafeImageUrl(body.coverImage)) {
+    data.coverImage = body.coverImage;
   }
 
   let contentChanged = false;

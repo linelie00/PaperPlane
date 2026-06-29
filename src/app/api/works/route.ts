@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
-import { generatePublicSlug } from "@/lib/utils";
+import { generatePublicSlug, isSafeImageUrl } from "@/lib/utils";
 import type { WorkListItem } from "@/types";
 
 // POST /api/works — 작품(프로젝트) 생성. 회차(본문)는 이후 따로 추가한다.
@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     tags?: string[];
     sourceLanguage?: string;
     targetLanguage?: string;
+    coverImage?: string | null;
   };
   try {
     body = await req.json();
@@ -28,6 +29,10 @@ export async function POST(req: NextRequest) {
   if (!title) {
     return errorResponse("MISSING_TITLE", "작품 제목을 입력해주세요.", 400);
   }
+  const coverImage =
+    typeof body.coverImage === "string" && isSafeImageUrl(body.coverImage)
+      ? body.coverImage
+      : null;
 
   // 작품 메타데이터만 저장. 공개 링크(slug)는 생성 시점에 발급한다.
   const work = await db.work.create({
@@ -39,6 +44,7 @@ export async function POST(req: NextRequest) {
       tags: Array.isArray(body.tags) ? body.tags : [],
       sourceLanguage: body.sourceLanguage ?? "ko",
       targetLanguage: body.targetLanguage ?? "en",
+      coverImage,
       publicSlug: generatePublicSlug(),
     },
   });
