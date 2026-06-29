@@ -53,8 +53,16 @@ export function sanitizeHtml(html: string): string {
     ],
     allowedAttributes: {
       a: ["href", "target", "rel"],
-      img: ["src", "alt"],
+      // 이미지 크기(style: width)와 지연 로딩(loading/decoding) 허용
+      img: ["src", "alt", "width", "height", "loading", "decoding", "style"],
       "*": ["class"],
+    },
+    // style은 width/height만 허용해 안전하게 제한한다.
+    allowedStyles: {
+      img: {
+        width: [/^\d{1,3}(\.\d+)?%$/, /^\d{1,4}px$/],
+        height: [/^auto$/, /^\d{1,4}px$/],
+      },
     },
     // javascript: 등 위험 스킴 차단. 상대경로(/uploads/...)는 기본 허용된다.
     allowedSchemes: ["http", "https", "mailto"],

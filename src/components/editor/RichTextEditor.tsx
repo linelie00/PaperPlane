@@ -10,6 +10,31 @@ type Props = {
   onChange: (html: string) => void;
 };
 
+// 이미지 크기 조절 가능 + 웹툰 최적화(지연 로딩) 확장
+const ResizableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      // 너비(예: "50%", "100%")를 inline style로 저장한다.
+      width: {
+        default: null,
+        parseHTML: (el) => (el as HTMLElement).style.width || null,
+        renderHTML: (attrs) =>
+          attrs.width ? { style: `width: ${attrs.width}` } : {},
+      },
+    };
+  },
+});
+
+// 이미지 크기 프리셋 (% 너비)
+const IMAGE_SIZES: { label: string; value: string | null }[] = [
+  { label: "25%", value: "25%" },
+  { label: "50%", value: "50%" },
+  { label: "75%", value: "75%" },
+  { label: "꽉 채우기", value: "100%" },
+  { label: "원본", value: null },
+];
+
 // 툴바 버튼
 function ToolbarButton({
   active,
@@ -165,6 +190,35 @@ function Toolbar({ editor }: { editor: Editor }) {
         className="hidden"
         onChange={handleFile}
       />
+
+      {/* 이미지가 선택됐을 때만 크기 조절 컨트롤 표시 */}
+      {editor.isActive("image") && (
+        <>
+          <Divider />
+          <span className="px-1 text-xs font-semibold text-ink-muted">
+            크기
+          </span>
+          {IMAGE_SIZES.map((s) => {
+            const active = (editor.getAttributes("image").width ?? null) === s.value;
+            return (
+              <ToolbarButton
+                key={s.label}
+                title={`이미지 ${s.label}`}
+                active={active}
+                onClick={() =>
+                  editor
+                    .chain()
+                    .focus()
+                    .updateAttributes("image", { width: s.value })
+                    .run()
+                }
+              >
+                {s.label}
+              </ToolbarButton>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }
@@ -174,7 +228,12 @@ export function RichTextEditor({ value, onChange }: Props) {
     immediatelyRender: false, // Next SSR 하이드레이션 불일치 방지
     extensions: [
       StarterKit,
-      Image.configure({ inline: false, allowBase64: false }),
+      // 새로 삽입되는 이미지는 지연 로딩으로(웹툰 등 큰 이미지 성능 최적화)
+      ResizableImage.configure({
+        inline: false,
+        allowBase64: false,
+        HTMLAttributes: { loading: "lazy", decoding: "async" },
+      }),
     ],
     content: value,
     editorProps: {

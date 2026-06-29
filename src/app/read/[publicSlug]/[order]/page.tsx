@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { getClientIp, hashIp } from "@/lib/utils";
 import { getChapterCommentTree } from "@/lib/comments";
+import { withLazyImages } from "@/lib/html";
 import { CommentSection } from "../CommentSection";
 import { AuthorBadge } from "@/components/AuthorBadge";
 
@@ -98,7 +99,9 @@ export default async function ChapterReaderPage({
       {/* 번역 본문 — 저장 시점에 sanitize된 HTML이므로 렌더는 안전하다. */}
       <article
         className="rich-content mt-8 text-[18px] text-ink-main"
-        dangerouslySetInnerHTML={{ __html: chapter.translatedText ?? "" }}
+        dangerouslySetInnerHTML={{
+          __html: withLazyImages(chapter.translatedText ?? ""),
+        }}
       />
 
       {/* 이전/다음 회차 네비게이션 */}

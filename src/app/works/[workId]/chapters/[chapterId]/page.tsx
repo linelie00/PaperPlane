@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/Card";
+import { withLazyImages } from "@/lib/html";
 import { ChapterActions } from "./ChapterActions";
 
 export default async function ChapterViewPage({
@@ -68,7 +69,9 @@ export default async function ChapterViewPage({
           <h2 className="font-bold text-ink-main">원문</h2>
           <div
             className="rich-content mt-3 text-[15px] text-ink-main"
-            dangerouslySetInnerHTML={{ __html: chapter.originalText }}
+            dangerouslySetInnerHTML={{
+              __html: withLazyImages(chapter.originalText),
+            }}
           />
         </Card>
         <Card>
@@ -76,7 +79,9 @@ export default async function ChapterViewPage({
           {chapter.translatedText ? (
             <div
               className="rich-content mt-3 text-[15px] text-ink-main"
-              dangerouslySetInnerHTML={{ __html: chapter.translatedText }}
+              dangerouslySetInnerHTML={{
+                __html: withLazyImages(chapter.translatedText),
+              }}
             />
           ) : (
             <p className="mt-3 text-sm text-ink-muted">

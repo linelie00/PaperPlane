@@ -104,10 +104,11 @@ body {
   text-decoration: underline;
 }
 .rich-content img {
+  display: block;
   max-width: 100%;
-  height: auto;
+  height: auto; /* 세로로 긴 웹툰 이미지도 비율 유지하며 전체 표시 */
   border-radius: 0.75rem;
-  margin: 1em 0;
+  margin: 0.75em auto; /* 너비를 줄이면 가운데 정렬 */
 }
 /* 에디터 빈 문서 placeholder (Tiptap) */
 .rich-content p.is-editor-empty:first-child::before {
