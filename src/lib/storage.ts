@@ -19,6 +19,14 @@ export async function saveUpload(
     return blob.url;
   }
 
+  // 서버리스(Vercel)에선 디스크가 읽기전용이라 디스크 저장이 불가능하다.
+  // Blob 미연결 상태면 디스크 폴백을 시도하지 말고 명확한 에러를 던진다.
+  if (process.env.VERCEL) {
+    throw new Error(
+      "이미지 저장소(Vercel Blob)가 연결되지 않았습니다. 프로젝트에 Blob 스토어를 연결하고 재배포해주세요.",
+    );
+  }
+
   const dir = path.join(process.cwd(), "public", "uploads");
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, filename), data);
