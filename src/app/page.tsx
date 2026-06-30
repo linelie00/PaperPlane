@@ -151,8 +151,24 @@ export default async function LandingPage() {
           </h2>
           <p className="mx-auto mt-4 max-w-lg leading-relaxed text-white/90">
             팬과 더 가까워지는 공간을 만들고 있습니다. 작가님은 평소처럼 작업만
-            하시면 돼요. 궁금한 점은 편하게 DM 주세요 :)
+            하시면 돼요. 궁금한 점은 이메일이나 X로 편하게 연락 주세요 :)
           </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm font-semibold">
+            <a
+              href="mailto:paperplane.asm@gmail.com"
+              className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-2 text-white transition hover:bg-white/20"
+            >
+              ✉ paperplane.asm@gmail.com
+            </a>
+            <a
+              href="https://x.com/paperplane_asm"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-2 text-white transition hover:bg-white/20"
+            >
+              𝕏 @paperplane_asm
+            </a>
+          </div>
           <div className="mt-8 flex justify-center">
             <LinkButton href={startHref} variant="secondary">
               작가로 시작하기
