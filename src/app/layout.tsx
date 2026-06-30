@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { appUrl } from "@/lib/meta";
 
-const TITLE = "PaperPlane — 언어가 달라져도, 이야기가 주는 설렘은 같아야 한다";
+const TITLE = "PaperPlane — 작품은 끝나도, 팬심은 이어지니까";
 const DESCRIPTION =
-  "PaperPlane은 창작자의 이야기를 AI로 번역하고, 해외 독자가 바로 읽을 수 있는 뷰어와 반응 확인 기능을 제공합니다.";
+  "PaperPlane은 작품만 보고 떠나던 독자를 작가의 ‘코어 팬’으로 잇는 팬덤 플랫폼입니다. 외전·짧은 컷·작업 비하인드 ‘Papers’로 팬과 더 가까워지세요.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl()),
