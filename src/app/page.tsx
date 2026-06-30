@@ -1,6 +1,7 @@
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
 import { getCurrentUser } from "@/lib/auth";
 
 export default async function LandingPage() {
@@ -161,8 +162,8 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-paper-border py-8 text-center text-sm text-ink-muted">
-        <span className="text-plane-primary">✈</span> PaperPlane
+      <footer className="flex justify-center border-t border-paper-border py-8">
+        <Logo size={22} className="opacity-70" />
       </footer>
     </div>
   );

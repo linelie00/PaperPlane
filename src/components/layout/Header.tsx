@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
 import { LinkButton } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
+import { Logo } from "@/components/ui/Logo";
 
 type HeaderProps = {
   // 로그인 사용자일 때만 전달
@@ -13,11 +14,8 @@ export function Header({ nickname, image }: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-paper-border/60 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <Link
-          href="/"
-          className="text-xl font-extrabold tracking-tight text-ink-main"
-        >
-          <span className="text-plane-primary">✈</span> PaperPlane
+        <Link href="/" aria-label="PaperPlane 홈">
+          <Logo size={26} />
         </Link>
 
         <nav className="flex items-center gap-5">
