@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Input";
 import { ImagePicker } from "@/components/ui/ImagePicker";
+import { LanguagePicker } from "@/components/works/LanguagePicker";
 
 type WorkOption = { id: string; title: string; chapterCount: number };
 type Mode = "new" | "existing";
@@ -136,14 +137,19 @@ function NewWorkForm() {
     genre: "",
     tags: "",
     sourceLanguage: "ko",
-    targetLanguage: "en",
   });
+  const [targetLanguages, setTargetLanguages] = useState<string[]>(["en"]);
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   function update(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function changeSource(value: string) {
+    update("sourceLanguage", value);
+    setTargetLanguages((prev) => prev.filter((l) => l !== value));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -167,7 +173,7 @@ function NewWorkForm() {
           .map((t) => t.trim())
           .filter(Boolean),
         sourceLanguage: form.sourceLanguage,
-        targetLanguage: form.targetLanguage,
+        targetLanguages,
         coverImage,
       }),
     });
@@ -231,37 +237,32 @@ function NewWorkForm() {
 
       <Card className="flex flex-col gap-4">
         <h2 className="font-bold text-ink-main">2. 번역 언어</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="원문 언어" htmlFor="sourceLanguage">
-            <select
-              id="sourceLanguage"
-              value={form.sourceLanguage}
-              onChange={(e) => update("sourceLanguage", e.target.value)}
-              className={selectClass}
-            >
-              <option value="ko">한국어</option>
-              <option value="en">English</option>
-              <option value="ja">日本語</option>
-              <option value="zh">中文</option>
-            </select>
-          </Field>
-          <Field label="번역 대상 언어" htmlFor="targetLanguage">
-            <select
-              id="targetLanguage"
-              value={form.targetLanguage}
-              onChange={(e) => update("targetLanguage", e.target.value)}
-              className={selectClass}
-            >
-              <option value="en">English</option>
-              <option value="ja">日本語</option>
-              <option value="zh">中文</option>
-              <option value="ko">한국어</option>
-            </select>
-          </Field>
+        <Field label="원문 언어" htmlFor="sourceLanguage">
+          <select
+            id="sourceLanguage"
+            value={form.sourceLanguage}
+            onChange={(e) => changeSource(e.target.value)}
+            className={selectClass}
+          >
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="zh">中文</option>
+          </select>
+        </Field>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-semibold text-ink-sub">
+            번역 대상 언어 (여러 개 선택 가능, 선택 안 해도 됨)
+          </span>
+          <LanguagePicker
+            sourceLanguage={form.sourceLanguage}
+            value={targetLanguages}
+            onChange={setTargetLanguages}
+          />
         </div>
         <p className="text-sm text-ink-sub">
-          번역 언어는 작품 전체 회차에 적용됩니다. 나중에 작품 정보에서 바꿀 수
-          있어요.
+          선택한 언어로 회차가 자동 번역되고, 독자는 뷰어에서 언어를 전환해
+          읽을 수 있어요. 나중에 작품 정보에서 바꿀 수 있어요.
         </p>
       </Card>
 

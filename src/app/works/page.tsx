@@ -63,8 +63,10 @@ export default async function WorksPage() {
                         </span>
                       </div>
                       <p className="mt-1 text-sm text-ink-sub">
-                        {langLabel(w.sourceLanguage)} →{" "}
-                        {langLabel(w.targetLanguage)} ·{" "}
+                        {langLabel(w.sourceLanguage)}
+                        {w.targetLanguages.length > 0 &&
+                          ` → ${w.targetLanguages.map(langLabel).join(", ")}`}{" "}
+                        ·{" "}
                         {w.isPublic ? (
                           <span className="text-plane-dark">
                             공개 (회차 {w.chapters.filter((c) => c.isPublic).length}

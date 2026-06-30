@@ -8,7 +8,7 @@ import {
   isHtmlEmpty,
   isSafeImageUrl,
 } from "@/lib/utils";
-import { runChapterTranslation } from "@/lib/translation";
+import { runChapterTranslations } from "@/lib/translation";
 
 // POST /api/works/[workId]/chapters — 회차 추가 (소유자만)
 export async function POST(
@@ -62,24 +62,16 @@ export async function POST(
       title: body.title?.trim() || `${nextOrder}화`,
       originalText,
       coverImage,
-      translationStatus: "pending",
+      // 공개 요청 시: 원문만으로도 공개할 수 있다. (번역은 보조 기능)
+      isPublic: body.isPublic === true,
     },
   });
 
-  const { translationStatus } = await runChapterTranslation(chapter.id);
-
-  // 공개 요청 시: 원문만으로도 공개할 수 있다. (번역은 보조 기능)
-  let isPublic = false;
-  if (body.isPublic) {
-    await db.chapter.update({
-      where: { id: chapter.id },
-      data: { isPublic: true },
-    });
-    isPublic = true;
-  }
+  // 작품의 모든 대상 언어로 번역 생성 (대상 언어가 없으면 건너뜀)
+  await runChapterTranslations(chapter.id);
 
   return NextResponse.json(
-    { chapterId: chapter.id, order: chapter.order, translationStatus, isPublic },
+    { chapterId: chapter.id, order: chapter.order, isPublic: chapter.isPublic },
     { status: 201 },
   );
 }

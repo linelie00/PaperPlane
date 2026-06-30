@@ -64,7 +64,8 @@ model Work {
   genre          String       @default("")
   tags           String[]     @default([])
   sourceLanguage String       @default("ko")
-  targetLanguage String       @default("en")
+  targetLanguage String       @default("en") // (구) 단일 번역 언어 — targetLanguages로 이관
+  targetLanguages String[]    @default([]) // 번역 대상 언어 목록 (다국어)
   coverImage     String? // 작품 메인 이미지 (선택)
   isPublic       Boolean      @default(false)
   publicSlug     String?      @unique
@@ -84,17 +85,32 @@ model Chapter {
   order             Int // 회차 번호 (1부터)
   title             String
   originalText      String
-  translatedText    String?
-  translationStatus TranslationStatus @default(pending)
+  translatedText    String? // (구) 단일 번역 — ChapterTranslation으로 이관
+  translationStatus TranslationStatus @default(pending) // (구)
   coverImage        String? // 회차 메인 이미지 (선택)
   isPublic          Boolean           @default(false)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
-  work              Work              @relation(fields: [workId], references: [id], onDelete: Cascade)
+  work              Work                 @relation(fields: [workId], references: [id], onDelete: Cascade)
   comments          Comment[]
+  translations      ChapterTranslation[]
 
   @@unique([workId, order])
   @@index([workId])
+}
+
+model ChapterTranslation {
+  id        String            @id @default(cuid())
+  chapterId String
+  language  String // "en" | "ja" | "zh" | "ko" 등
+  text      String?
+  status    TranslationStatus @default(pending)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  chapter   Chapter           @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([chapterId, language])
+  @@index([chapterId])
 }
 
 model Comment {

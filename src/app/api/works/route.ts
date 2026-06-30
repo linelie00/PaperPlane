@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
 import { generatePublicSlug, isSafeImageUrl } from "@/lib/utils";
+import { normalizeLanguages } from "@/lib/lang";
 import type { WorkListItem } from "@/types";
 
 // POST /api/works — 작품(프로젝트) 생성. 회차(본문)는 이후 따로 추가한다.
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     genre?: string;
     tags?: string[];
     sourceLanguage?: string;
-    targetLanguage?: string;
+    targetLanguages?: string[];
     coverImage?: string | null;
   };
   try {
@@ -33,6 +34,8 @@ export async function POST(req: NextRequest) {
     typeof body.coverImage === "string" && isSafeImageUrl(body.coverImage)
       ? body.coverImage
       : null;
+  const sourceLanguage = body.sourceLanguage ?? "ko";
+  const targetLanguages = normalizeLanguages(body.targetLanguages, sourceLanguage);
 
   // 작품 메타데이터만 저장. 공개 링크(slug)는 생성 시점에 발급한다.
   const work = await db.work.create({
@@ -42,8 +45,9 @@ export async function POST(req: NextRequest) {
       description: body.description?.trim() ?? "",
       genre: body.genre?.trim() ?? "",
       tags: Array.isArray(body.tags) ? body.tags : [],
-      sourceLanguage: body.sourceLanguage ?? "ko",
-      targetLanguage: body.targetLanguage ?? "en",
+      sourceLanguage,
+      targetLanguages,
+      targetLanguage: targetLanguages[0] ?? "en", // 구 필드 호환
       coverImage,
       publicSlug: generatePublicSlug(),
     },
@@ -70,7 +74,7 @@ export async function GET() {
     id: w.id,
     title: w.title,
     sourceLanguage: w.sourceLanguage,
-    targetLanguage: w.targetLanguage,
+    targetLanguages: w.targetLanguages,
     isPublic: w.isPublic,
     chapterCount: w.chapters.length,
     publicChapterCount: w.chapters.filter((c) => c.isPublic).length,

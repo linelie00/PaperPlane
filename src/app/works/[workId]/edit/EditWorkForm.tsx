@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Input";
 import { ImagePicker } from "@/components/ui/ImagePicker";
+import { LanguagePicker } from "@/components/works/LanguagePicker";
 
 type FormState = {
   title: string;
@@ -14,29 +15,38 @@ type FormState = {
   genre: string;
   tags: string;
   sourceLanguage: string;
-  targetLanguage: string;
   coverImage: string | null;
 };
 
 export function EditWorkForm({
   workId,
   initial,
+  initialTargetLanguages,
 }: {
   workId: string;
   initial: FormState;
+  initialTargetLanguages: string[];
 }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(initial);
+  const [targetLanguages, setTargetLanguages] = useState<string[]>(
+    initialTargetLanguages,
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 번역 언어가 바뀌면 저장 시 모든 회차가 다시 번역된다.
+  // 번역 언어 구성이 바뀌면 저장 시 모든 회차가 다시 번역된다.
   const willRetranslate =
     form.sourceLanguage !== initial.sourceLanguage ||
-    form.targetLanguage !== initial.targetLanguage;
+    JSON.stringify(targetLanguages) !== JSON.stringify(initialTargetLanguages);
 
   function update(key: keyof FormState, value: string | null) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function changeSource(value: string) {
+    update("sourceLanguage", value);
+    setTargetLanguages((prev) => prev.filter((l) => l !== value));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -61,7 +71,7 @@ export function EditWorkForm({
           .map((t) => t.trim())
           .filter(Boolean),
         sourceLanguage: form.sourceLanguage,
-        targetLanguage: form.targetLanguage,
+        targetLanguages,
         coverImage: form.coverImage,
       }),
     });
@@ -142,33 +152,31 @@ export function EditWorkForm({
 
         <Card className="flex flex-col gap-4">
           <h2 className="font-bold text-ink-main">2. 번역 언어</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="원문 언어" htmlFor="sourceLanguage">
-              <select
-                id="sourceLanguage"
-                value={form.sourceLanguage}
-                onChange={(e) => update("sourceLanguage", e.target.value)}
-                className="w-full rounded-2xl border border-paper-border bg-white px-4 py-3 text-ink-main outline-none focus:border-plane-primary focus:ring-4 focus:ring-plane-light/40"
-              >
-                <option value="ko">한국어</option>
-                <option value="en">English</option>
-                <option value="ja">日本語</option>
-                <option value="zh">中文</option>
-              </select>
-            </Field>
-            <Field label="번역 대상 언어" htmlFor="targetLanguage">
-              <select
-                id="targetLanguage"
-                value={form.targetLanguage}
-                onChange={(e) => update("targetLanguage", e.target.value)}
-                className="w-full rounded-2xl border border-paper-border bg-white px-4 py-3 text-ink-main outline-none focus:border-plane-primary focus:ring-4 focus:ring-plane-light/40"
-              >
-                <option value="en">English</option>
-                <option value="ja">日本語</option>
-                <option value="zh">中文</option>
-                <option value="ko">한국어</option>
-              </select>
-            </Field>
+          <Field label="원문 언어" htmlFor="sourceLanguage">
+            <select
+              id="sourceLanguage"
+              value={form.sourceLanguage}
+              onChange={(e) => changeSource(e.target.value)}
+              className="w-full rounded-2xl border border-paper-border bg-white px-4 py-3 text-ink-main outline-none focus:border-plane-primary focus:ring-4 focus:ring-plane-light/40"
+            >
+              <option value="ko">한국어</option>
+              <option value="en">English</option>
+              <option value="ja">日本語</option>
+              <option value="zh">中文</option>
+            </select>
+          </Field>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-semibold text-ink-sub">
+              번역 대상 언어 (여러 개 선택 가능)
+            </span>
+            <LanguagePicker
+              sourceLanguage={form.sourceLanguage}
+              value={targetLanguages}
+              onChange={setTargetLanguages}
+            />
+            <p className="text-xs text-ink-muted">
+              언어를 바꾸면 저장 시 모든 회차가 다시 번역됩니다.
+            </p>
           </div>
         </Card>
 

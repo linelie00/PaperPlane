@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
 import { generatePublicSlug, isSafeImageUrl } from "@/lib/utils";
-import { runChapterTranslation } from "@/lib/translation";
+import { normalizeLanguages } from "@/lib/lang";
+import { runChapterTranslations } from "@/lib/translation";
 import type { WorkDetail } from "@/types";
 
 // GET /api/works/[workId] — 작품 상세 + 회차 목록 (소유자만)
@@ -18,7 +19,10 @@ export async function GET(
   const work = await db.work.findUnique({
     where: { id: workId },
     include: {
-      chapters: { orderBy: { order: "asc" } },
+      chapters: {
+        orderBy: { order: "asc" },
+        include: { translations: true },
+      },
       comments: {
         orderBy: { createdAt: "asc" },
         include: { chapter: { select: { order: true } } },
@@ -46,7 +50,7 @@ export async function GET(
     genre: work.genre,
     tags: work.tags,
     sourceLanguage: work.sourceLanguage,
-    targetLanguage: work.targetLanguage,
+    targetLanguages: work.targetLanguages,
     coverImage: work.coverImage,
     isPublic: work.isPublic,
     publicSlug: work.publicSlug,
@@ -58,9 +62,12 @@ export async function GET(
       title: c.title,
       isPublic: c.isPublic,
       coverImage: c.coverImage,
-      translationStatus: c.translationStatus,
       originalText: c.originalText,
-      translatedText: c.translatedText,
+      translations: c.translations.map((t) => ({
+        language: t.language,
+        status: t.status,
+        text: t.text,
+      })),
     })),
     comments: work.comments
       .filter((c) => !c.parentId)
@@ -107,7 +114,7 @@ export async function PATCH(
     genre?: string;
     tags?: string[];
     sourceLanguage?: string;
-    targetLanguage?: string;
+    targetLanguages?: string[];
     coverImage?: string | null;
   };
   try {
@@ -126,7 +133,19 @@ export async function PATCH(
   if (typeof body.genre === "string") data.genre = body.genre.trim();
   if (Array.isArray(body.tags)) data.tags = body.tags;
   if (typeof body.sourceLanguage === "string") data.sourceLanguage = body.sourceLanguage;
-  if (typeof body.targetLanguage === "string") data.targetLanguage = body.targetLanguage;
+
+  const source =
+    typeof body.sourceLanguage === "string" ? body.sourceLanguage : work.sourceLanguage;
+  let langChanged = "sourceLanguage" in data && data.sourceLanguage !== work.sourceLanguage;
+  if (Array.isArray(body.targetLanguages)) {
+    const langs = normalizeLanguages(body.targetLanguages, source);
+    data.targetLanguages = langs;
+    data.targetLanguage = langs[0] ?? ""; // 구 필드 호환
+    if (JSON.stringify(langs) !== JSON.stringify(work.targetLanguages)) {
+      langChanged = true;
+    }
+  }
+
   // 메인 이미지: URL(자체 업로드/외부) 또는 null(제거)
   if (body.coverImage === null) {
     data.coverImage = null;
@@ -141,16 +160,12 @@ export async function PATCH(
     }
   }
 
-  const langChanged =
-    ("sourceLanguage" in data && data.sourceLanguage !== work.sourceLanguage) ||
-    ("targetLanguage" in data && data.targetLanguage !== work.targetLanguage);
-
   const updated = await db.work.update({ where: { id: workId }, data });
 
-  // 번역 언어가 바뀌면 모든 회차를 다시 번역한다.
+  // 번역 언어 구성이 바뀌면 모든 회차를 다시 번역한다(추가 언어 백필 + 제거 정리).
   if (langChanged) {
     for (const ch of work.chapters) {
-      await runChapterTranslation(ch.id);
+      await runChapterTranslations(ch.id);
     }
   }
 

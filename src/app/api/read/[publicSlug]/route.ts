@@ -33,7 +33,7 @@ export async function GET(
     title: work.title,
     description: work.description,
     authorNickname: work.author.nickname,
-    targetLanguage: work.targetLanguage,
+    targetLanguages: work.targetLanguages,
     viewCount: work._count.viewLogs,
     chapters: work.chapters,
   });

@@ -102,6 +102,11 @@ export default async function ChapterReaderPage({
       chapters: {
         where: { isPublic: true },
         orderBy: { order: "asc" },
+        include: {
+          translations: {
+            where: { status: "completed", text: { not: null } },
+          },
+        },
       },
     },
   });
@@ -159,16 +164,18 @@ export default async function ChapterReaderPage({
         />
       </div>
 
-      {/* 원문 우선, 번역이 있으면 언어 전환 가능 */}
+      {/* 원문 우선, 번역이 있으면 언어 버튼으로 전환 가능 */}
       <ChapterContent
         original={withLazyImages(chapter.originalText)}
-        translated={
-          chapter.translatedText && chapter.translationStatus === "completed"
-            ? withLazyImages(chapter.translatedText)
-            : null
-        }
         sourceLanguage={work.sourceLanguage}
-        targetLanguage={work.targetLanguage}
+        translations={work.targetLanguages
+          .map((language) => {
+            const t = chapter.translations.find((x) => x.language === language);
+            return t?.text
+              ? { language, html: withLazyImages(t.text) }
+              : null;
+          })
+          .filter((x): x is { language: string; html: string } => x !== null)}
       />
 
       {/* 이전/다음 회차 네비게이션 */}

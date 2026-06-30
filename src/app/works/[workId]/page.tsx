@@ -16,7 +16,10 @@ export default async function WorkDetailPage({
   const work = await db.work.findUnique({
     where: { id: workId },
     include: {
-      chapters: { orderBy: { order: "asc" } },
+      chapters: {
+        orderBy: { order: "asc" },
+        include: { translations: true },
+      },
       comments: {
         orderBy: { createdAt: "asc" },
         include: { chapter: { select: { order: true } } },
@@ -61,7 +64,7 @@ export default async function WorkDetailPage({
     genre: work.genre,
     tags: work.tags,
     sourceLanguage: work.sourceLanguage,
-    targetLanguage: work.targetLanguage,
+    targetLanguages: work.targetLanguages,
     coverImage: work.coverImage,
     isPublic: work.isPublic,
     publicSlug: work.publicSlug,
@@ -73,9 +76,12 @@ export default async function WorkDetailPage({
       title: c.title,
       isPublic: c.isPublic,
       coverImage: c.coverImage,
-      translationStatus: c.translationStatus,
       originalText: c.originalText,
-      translatedText: c.translatedText,
+      translations: c.translations.map((t) => ({
+        language: t.language,
+        status: t.status,
+        text: t.text,
+      })),
     })),
     comments: rootComments,
   };

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CoverImage } from "@/components/ui/CoverImage";
 import type { WorkDetail, ChapterItem } from "@/types";
 
@@ -303,19 +302,22 @@ function ChapterRow({
   appUrl: string;
 }) {
   const router = useRouter();
-  const [status, setStatus] = useState(chapter.translationStatus);
   const [isPublic, setIsPublic] = useState(chapter.isPublic);
   const [busy, setBusy] = useState(false);
 
+  // 언어별 번역 완료 개수
+  const doneCount = chapter.translations.filter(
+    (t) => t.status === "completed",
+  ).length;
+  const totalLangs = chapter.translations.length;
+
   async function retranslate() {
     setBusy(true);
-    setStatus("processing");
-    const res = await fetch("/api/translate", {
+    await fetch("/api/translate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chapterId: chapter.id }),
     });
-    setStatus(res.ok ? "completed" : "failed");
     setBusy(false);
     router.refresh();
   }
@@ -369,7 +371,11 @@ function ChapterRow({
         <span className="truncate font-bold text-ink-main group-hover:text-plane-dark group-hover:underline">
           {chapter.title}
         </span>
-        <StatusBadge status={status} />
+        {totalLangs > 0 && (
+          <span className="shrink-0 rounded-full bg-sky-pale px-2 py-0.5 text-xs font-semibold text-plane-dark">
+            번역 {doneCount}/{totalLangs}
+          </span>
+        )}
         {isPublic && (
           <span className="rounded-full bg-sky-soft px-2 py-0.5 text-xs text-plane-dark">
             공개
@@ -389,10 +395,10 @@ function ChapterRow({
         )}
         <button
           onClick={retranslate}
-          disabled={busy || status === "processing"}
+          disabled={busy}
           className="rounded-lg px-3 py-1.5 text-sm font-semibold text-ink-sub hover:text-plane-dark disabled:opacity-50"
         >
-          {status === "processing" ? "번역 중…" : "다시 번역"}
+          {busy ? "처리 중…" : "다시 번역"}
         </button>
         <Link
           href={`/works/${workId}/chapters/${chapter.id}/edit`}

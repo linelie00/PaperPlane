@@ -4,14 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
-import type { TranslationStatus } from "@/types";
 
 export function ChapterActions({
   workId,
   chapterId,
   order,
-  initialStatus,
   initialPublic,
   workIsPublic,
   publicSlug,
@@ -20,14 +17,12 @@ export function ChapterActions({
   workId: string;
   chapterId: string;
   order: number;
-  initialStatus: TranslationStatus;
   initialPublic: boolean;
   workIsPublic: boolean;
   publicSlug: string | null;
   appUrl: string;
 }) {
   const router = useRouter();
-  const [status, setStatus] = useState(initialStatus);
   const [isPublic, setIsPublic] = useState(initialPublic);
   const [busy, setBusy] = useState(false);
 
@@ -38,13 +33,11 @@ export function ChapterActions({
 
   async function retranslate() {
     setBusy(true);
-    setStatus("processing");
-    const res = await fetch("/api/translate", {
+    await fetch("/api/translate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chapterId }),
     });
-    setStatus(res.ok ? "completed" : "failed");
     setBusy(false);
     router.refresh();
   }
@@ -68,10 +61,13 @@ export function ChapterActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <StatusBadge status={status} />
-      {isPublic && (
+      {isPublic ? (
         <span className="rounded-full bg-sky-soft px-2.5 py-0.5 text-xs font-semibold text-plane-dark">
-          공개
+          공개됨
+        </span>
+      ) : (
+        <span className="rounded-full bg-paper-border/50 px-2.5 py-0.5 text-xs font-semibold text-ink-muted">
+          비공개
         </span>
       )}
       <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -88,10 +84,10 @@ export function ChapterActions({
         <Button
           variant="secondary"
           onClick={retranslate}
-          disabled={busy || status === "processing"}
+          disabled={busy}
           className="px-4 py-2 text-sm"
         >
-          {status === "processing" ? "번역 중…" : "다시 번역"}
+          {busy ? "처리 중…" : "다시 번역"}
         </Button>
         <Link
           href={`/works/${workId}/chapters/${chapterId}/edit`}

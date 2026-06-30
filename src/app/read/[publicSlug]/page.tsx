@@ -111,7 +111,17 @@ export default async function ReaderListPage({
       </div>
       <p className="mt-6 text-sm font-semibold text-plane-dark">
         <span className="text-plane-primary">✈</span> PaperPlane ·{" "}
-        {LANG_LABEL[work.targetLanguage] ?? work.targetLanguage}
+        {LANG_LABEL[work.sourceLanguage] ?? work.sourceLanguage}
+        {work.targetLanguages.length > 0 && (
+          <span className="text-ink-muted">
+            {" "}
+            (번역:{" "}
+            {work.targetLanguages
+              .map((l) => LANG_LABEL[l] ?? l)
+              .join(", ")}
+            )
+          </span>
+        )}
       </p>
       <h1 className="mt-3 text-3xl font-extrabold leading-tight text-ink-main">
         {work.title}

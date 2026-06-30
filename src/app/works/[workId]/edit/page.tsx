@@ -21,13 +21,13 @@ export default async function EditWorkPage({
   return (
     <EditWorkForm
       workId={work.id}
+      initialTargetLanguages={work.targetLanguages}
       initial={{
         title: work.title,
         description: work.description,
         genre: work.genre,
         tags: work.tags.join(", "),
         sourceLanguage: work.sourceLanguage,
-        targetLanguage: work.targetLanguage,
         coverImage: work.coverImage,
       }}
     />

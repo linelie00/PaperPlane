@@ -8,7 +8,7 @@ import {
   isHtmlEmpty,
   isSafeImageUrl,
 } from "@/lib/utils";
-import { runChapterTranslation } from "@/lib/translation";
+import { runChapterTranslations } from "@/lib/translation";
 
 // 회차 + 소유자 확인 헬퍼. 실패 시 error에 응답을 담아 반환한다.
 type ChapterWithWork = NonNullable<
@@ -95,13 +95,12 @@ export async function PATCH(
 
   await db.chapter.update({ where: { id: chapterId }, data });
 
-  let translationStatus = chapter.translationStatus;
+  // 본문이 바뀌면 모든 대상 언어로 다시 번역한다.
   if (contentChanged) {
-    const r = await runChapterTranslation(chapterId);
-    translationStatus = r.translationStatus;
+    await runChapterTranslations(chapterId);
   }
 
-  return NextResponse.json({ success: true, translationStatus });
+  return NextResponse.json({ success: true });
 }
 
 // DELETE /api/chapters/[chapterId] — 회차 삭제 (소유자만)

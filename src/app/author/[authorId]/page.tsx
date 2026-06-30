@@ -78,7 +78,8 @@ export default async function AuthorHomePage({
       title: true,
       description: true,
       genre: true,
-      targetLanguage: true,
+      sourceLanguage: true,
+      targetLanguages: true,
       publicSlug: true,
       coverImage: true,
       _count: {
@@ -151,11 +152,17 @@ export default async function AuthorHomePage({
                         {w.description}
                       </p>
                     )}
-                    <div className="mt-3 flex gap-2 text-xs text-ink-muted">
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-ink-muted">
                       {w.genre && <span>{w.genre}</span>}
-                      <span>
-                        {LANG_LABEL[w.targetLanguage] ?? w.targetLanguage}
-                      </span>
+                      <span>{LANG_LABEL[w.sourceLanguage] ?? w.sourceLanguage}</span>
+                      {w.targetLanguages.length > 0 && (
+                        <span>
+                          +{" "}
+                          {w.targetLanguages
+                            .map((l) => LANG_LABEL[l] ?? l)
+                            .join(", ")}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </Link>

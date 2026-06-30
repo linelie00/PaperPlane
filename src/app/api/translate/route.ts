@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
-import { runChapterTranslation } from "@/lib/translation";
+import {
+  runChapterTranslations,
+  runChapterTranslationFor,
+} from "@/lib/translation";
 
-// POST /api/translate — 회차 번역 재생성 (소유자만, docs/04_API_SPEC.md)
+// POST /api/translate — 회차 번역 재생성 (소유자만)
+// language를 주면 해당 언어만, 없으면 작품의 모든 대상 언어를 다시 번역한다.
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return ApiError.unauthorized();
 
-  let body: { chapterId?: string };
+  let body: { chapterId?: string; language?: string };
   try {
     body = await req.json();
   } catch {
@@ -27,13 +31,16 @@ export async function POST(req: NextRequest) {
   if (!chapter) return ApiError.workNotFound();
   if (chapter.work.authorId !== user.userId) return ApiError.forbidden();
 
-  const { translationStatus, translatedText } = await runChapterTranslation(
-    chapter.id,
-  );
-
-  if (translationStatus === "failed") {
-    return errorResponse("TRANSLATION_FAILED", "번역에 실패했습니다.", 502);
+  if (body.language) {
+    await runChapterTranslationFor(chapter.id, body.language);
+  } else {
+    await runChapterTranslations(chapter.id);
   }
 
-  return NextResponse.json({ translationStatus, translatedText });
+  const translations = await db.chapterTranslation.findMany({
+    where: { chapterId: chapter.id },
+    select: { language: true, status: true, text: true },
+  });
+
+  return NextResponse.json({ translations });
 }
