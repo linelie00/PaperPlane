@@ -30,6 +30,7 @@ export default async function NewChapterPage({
       initialText=""
       initialPublic={false}
       initialCover={null}
+      initialCategory={null}
     />
   );
 }

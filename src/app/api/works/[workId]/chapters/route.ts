@@ -12,6 +12,7 @@ import {
   markChapterTranslationsPending,
   runChapterTranslations,
 } from "@/lib/translation";
+import { normalizeCategory } from "@/lib/chapter";
 
 // 다국어 번역으로 LLM을 여러 번 호출하므로 함수 실행 시간을 넉넉히 둔다.
 export const maxDuration = 60;
@@ -37,6 +38,7 @@ export async function POST(
     originalText?: string;
     isPublic?: boolean;
     coverImage?: string | null;
+    category?: string | null;
   };
   try {
     body = await req.json();
@@ -66,6 +68,7 @@ export async function POST(
       workId,
       order: nextOrder,
       title: body.title?.trim() || `${nextOrder}화`,
+      category: normalizeCategory(body.category),
       originalText,
       coverImage,
       // 공개 요청 시: 원문만으로도 공개할 수 있다. (번역은 보조 기능)

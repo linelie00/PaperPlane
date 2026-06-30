@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { ImagePicker } from "@/components/ui/ImagePicker";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
+import { CHAPTER_CATEGORIES } from "@/lib/chapter";
 
 function isContentEmpty(html: string): boolean {
   return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim() === "";
@@ -21,6 +22,7 @@ type Props = {
   initialText: string;
   initialPublic: boolean;
   initialCover: string | null;
+  initialCategory: string | null;
 };
 
 export function ChapterForm({
@@ -31,12 +33,14 @@ export function ChapterForm({
   initialText,
   initialPublic,
   initialCover,
+  initialCategory,
 }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [originalText, setOriginalText] = useState(initialText);
   const [isPublic, setIsPublic] = useState(initialPublic);
   const [coverImage, setCoverImage] = useState<string | null>(initialCover);
+  const [category, setCategory] = useState<string | null>(initialCategory);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -60,7 +64,7 @@ export function ChapterForm({
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, originalText, isPublic, coverImage }),
+      body: JSON.stringify({ title, originalText, isPublic, coverImage, category }),
     });
 
     if (res.ok) {
@@ -99,12 +103,44 @@ export function ChapterForm({
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-6">
         <Card className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-semibold text-ink-sub">
+              종류 (선택)
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setCategory(null)}
+                className={`rounded-full border px-4 py-1.5 text-sm font-bold transition ${
+                  category === null
+                    ? "border-plane-primary bg-plane-primary text-white"
+                    : "border-paper-border bg-white text-ink-sub hover:bg-sky-pale"
+                }`}
+              >
+                없음
+              </button>
+              {CHAPTER_CATEGORIES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className={`rounded-full border px-4 py-1.5 text-sm font-bold transition ${
+                    category === c
+                      ? "border-plane-primary bg-plane-primary text-white"
+                      : "border-paper-border bg-white text-ink-sub hover:bg-sky-pale"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
           <Field label="회차 제목" htmlFor="title">
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="예) 1화: 시작"
+              placeholder="예) 1화: 시작 · 외전 1화 · 낙서"
             />
           </Field>
           <div className="flex flex-col gap-1.5">

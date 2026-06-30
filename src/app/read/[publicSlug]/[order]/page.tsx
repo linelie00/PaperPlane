@@ -10,6 +10,7 @@ import { absoluteUrl, firstImageSrc, plainExcerpt } from "@/lib/meta";
 import { CommentSection } from "../CommentSection";
 import { ChapterContent } from "../ChapterContent";
 import { AuthorBadge } from "@/components/AuthorBadge";
+import { ShareButton } from "@/components/ShareButton";
 
 // 소셜 공유 미리보기 (회차 단위)
 export async function generateMetadata({
@@ -149,19 +150,25 @@ export default async function ChapterReaderPage({
       >
         ← {work.title}
       </Link>
-      <p className="mt-4 text-sm font-semibold text-plane-dark">
-        <span className="text-plane-primary">✈</span> {chapter.order}화 ·{" "}
-        {LANG_LABEL[work.sourceLanguage] ?? work.sourceLanguage}
+      <p className="mt-4 flex items-center gap-2 text-sm font-semibold text-plane-dark">
+        <span className="text-plane-primary">✈</span>
+        {chapter.category ? (
+          <span className="rounded-full bg-plane-primary/10 px-2 py-0.5 text-xs">
+            {chapter.category}
+          </span>
+        ) : null}
+        <span>{LANG_LABEL[work.sourceLanguage] ?? work.sourceLanguage}</span>
       </p>
       <h1 className="mt-2 text-3xl font-extrabold leading-tight text-ink-main">
         {chapter.title}
       </h1>
-      <div className="mt-2">
+      <div className="mt-2 flex items-center justify-between gap-3">
         <AuthorBadge
           authorId={work.author.id}
           nickname={work.author.nickname}
           image={work.author.image}
         />
+        <ShareButton />
       </div>
 
       {/* 원문 우선, 번역이 있으면 언어 버튼으로 전환 가능 */}

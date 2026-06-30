@@ -12,6 +12,7 @@ import {
   markChapterTranslationsPending,
   runChapterTranslations,
 } from "@/lib/translation";
+import { normalizeCategory } from "@/lib/chapter";
 
 // 회차 + 소유자 확인 헬퍼. 실패 시 error에 응답을 담아 반환한다.
 type ChapterWithWork = NonNullable<
@@ -55,6 +56,7 @@ export async function PATCH(
     originalText?: string;
     isPublic?: boolean;
     coverImage?: string | null;
+    category?: string | null;
   };
   try {
     body = await req.json();
@@ -65,6 +67,9 @@ export async function PATCH(
   const data: Record<string, unknown> = {};
   if (typeof body.title === "string" && body.title.trim()) {
     data.title = body.title.trim();
+  }
+  if ("category" in body) {
+    data.category = normalizeCategory(body.category);
   }
   if (body.coverImage === null) {
     data.coverImage = null;

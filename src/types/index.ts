@@ -31,6 +31,7 @@ export type ChapterItem = {
   id: string;
   order: number;
   title: string;
+  category: string | null;
   isPublic: boolean;
   coverImage: string | null;
   originalText: string;

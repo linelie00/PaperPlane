@@ -85,8 +85,9 @@ model Work {
 model Chapter {
   id                String            @id @default(cuid())
   workId            String
-  order             Int // 회차 번호 (1부터)
+  order             Int // 정렬 순서 (1부터)
   title             String
+  category          String? // 회차 종류(본편/외전/낙서/작업 비하인드 등, 선택)
   originalText      String
   translatedText    String? // (구) 단일 번역 — ChapterTranslation으로 이관
   translationStatus TranslationStatus @default(pending) // (구)

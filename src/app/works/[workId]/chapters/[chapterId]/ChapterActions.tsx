@@ -25,11 +25,19 @@ export function ChapterActions({
   const router = useRouter();
   const [isPublic, setIsPublic] = useState(initialPublic);
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const readUrl =
     workIsPublic && isPublic && publicSlug && appUrl
       ? `${appUrl}/read/${publicSlug}/${order}`
       : "";
+
+  async function copyShareLink() {
+    if (!readUrl) return;
+    await navigator.clipboard.writeText(readUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   async function retranslate() {
     setBusy(true);
@@ -72,14 +80,23 @@ export function ChapterActions({
       )}
       <div className="ml-auto flex flex-wrap items-center gap-2">
         {readUrl && (
-          <a
-            href={readUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-ink-sub hover:text-plane-dark"
-          >
-            미리보기
-          </a>
+          <>
+            <a
+              href={readUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg px-3 py-1.5 text-sm font-semibold text-ink-sub hover:text-plane-dark"
+            >
+              미리보기
+            </a>
+            <button
+              type="button"
+              onClick={copyShareLink}
+              className="rounded-lg border border-plane-light bg-white px-4 py-2 text-sm font-bold text-plane-dark hover:bg-sky-pale"
+            >
+              {copied ? "복사됨!" : "공유 링크 복사"}
+            </button>
+          </>
         )}
         <Button
           variant="secondary"

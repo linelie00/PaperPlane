@@ -89,6 +89,7 @@ export default async function ReaderListPage({
         select: {
           order: true,
           title: true,
+          category: true,
           coverImage: true,
           _count: { select: { comments: true } },
         },
@@ -150,10 +151,12 @@ export default async function ReaderListPage({
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl">
                   <CoverImage src={ch.coverImage} alt={ch.title} />
                 </div>
-                <span className="flex flex-1 items-center gap-3">
-                  <span className="text-xs font-bold text-plane-dark">
-                    {ch.order}화
-                  </span>
+                <span className="flex flex-1 items-center gap-2">
+                  {ch.category && (
+                    <span className="shrink-0 rounded-full bg-plane-primary/10 px-2 py-0.5 text-xs font-bold text-plane-dark">
+                      {ch.category}
+                    </span>
+                  )}
                   <span className="font-bold text-ink-main">{ch.title}</span>
                 </span>
                 <span className="flex items-center gap-3 pr-2 text-sm text-ink-muted">

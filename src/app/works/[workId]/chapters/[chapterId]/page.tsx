@@ -44,10 +44,13 @@ export default async function ChapterViewPage({
         ← {chapter.work.title}
       </Link>
 
-      <div className="mt-4 flex items-center gap-3">
-        <span className="text-sm font-bold text-plane-dark">
-          {chapter.order}화
-        </span>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <span className="text-sm text-ink-muted">#{chapter.order}</span>
+        {chapter.category && (
+          <span className="rounded-full bg-plane-primary/10 px-2.5 py-0.5 text-xs font-bold text-plane-dark">
+            {chapter.category}
+          </span>
+        )}
         <h1 className="text-2xl font-extrabold text-ink-main">{chapter.title}</h1>
       </div>
 

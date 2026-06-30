@@ -29,6 +29,7 @@ export default async function EditChapterPage({
       initialText={chapter.originalText}
       initialPublic={chapter.isPublic}
       initialCover={chapter.coverImage}
+      initialCategory={chapter.category}
     />
   );
 }

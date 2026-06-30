@@ -74,6 +74,7 @@ export default async function WorkDetailPage({
       id: c.id,
       order: c.order,
       title: c.title,
+      category: c.category,
       isPublic: c.isPublic,
       coverImage: c.coverImage,
       originalText: c.originalText,

@@ -316,12 +316,19 @@ function ChapterRow({
   const router = useRouter();
   const [isPublic, setIsPublic] = useState(chapter.isPublic);
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // 언어별 번역 완료 개수
   const doneCount = chapter.translations.filter(
     (t) => t.status === "completed",
   ).length;
   const totalLangs = chapter.translations.length;
+
+  async function copyShareLink(url: string) {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   async function retranslate() {
     setBusy(true);
@@ -377,9 +384,12 @@ function ChapterRow({
         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
           <CoverImage src={chapter.coverImage} alt={chapter.title} />
         </div>
-        <span className="text-xs font-bold text-plane-dark">
-          {chapter.order}화
-        </span>
+        <span className="shrink-0 text-xs text-ink-muted">#{chapter.order}</span>
+        {chapter.category && (
+          <span className="shrink-0 rounded-full bg-plane-primary/10 px-2 py-0.5 text-xs font-bold text-plane-dark">
+            {chapter.category}
+          </span>
+        )}
         <span className="truncate font-bold text-ink-main group-hover:text-plane-dark group-hover:underline">
           {chapter.title}
         </span>
@@ -396,14 +406,22 @@ function ChapterRow({
       </Link>
       <div className="flex flex-wrap items-center gap-2">
         {readUrl && (
-          <a
-            href={readUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-ink-sub hover:text-plane-dark"
-          >
-            미리보기
-          </a>
+          <>
+            <a
+              href={readUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg px-3 py-1.5 text-sm font-semibold text-ink-sub hover:text-plane-dark"
+            >
+              미리보기
+            </a>
+            <button
+              onClick={() => copyShareLink(readUrl)}
+              className="rounded-lg px-3 py-1.5 text-sm font-semibold text-ink-sub hover:text-plane-dark"
+            >
+              {copied ? "복사됨!" : "공유"}
+            </button>
+          </>
         )}
         <button
           onClick={retranslate}
