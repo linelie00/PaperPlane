@@ -7,6 +7,9 @@ import {
   runChapterTranslationFor,
 } from "@/lib/translation";
 
+// 다국어 번역으로 LLM을 여러 번 호출하므로 함수 실행 시간을 넉넉히 둔다.
+export const maxDuration = 60;
+
 // POST /api/translate — 회차 번역 재생성 (소유자만)
 // language를 주면 해당 언어만, 없으면 작품의 모든 대상 언어를 다시 번역한다.
 export async function POST(req: NextRequest) {

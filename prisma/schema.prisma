@@ -6,8 +6,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // 런타임 연결 (Neon 등 서버리스에서는 풀링된 URL 권장)
+  url       = env("DATABASE_URL")
+  // 마이그레이션/db push용 직접 연결 (없으면 DATABASE_URL과 동일하게 두면 됨)
+  directUrl = env("DIRECT_URL")
 }
 
 enum TranslationStatus {

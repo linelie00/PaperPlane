@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
 import { generateToken } from "@/lib/utils";
+import { saveUpload } from "@/lib/storage";
 
 // 허용 이미지 MIME → 확장자
 const ALLOWED: Record<string, string> = {
@@ -45,11 +44,8 @@ export async function POST(req: NextRequest) {
 
   // 사용자 파일명을 쓰지 않고 랜덤 파일명을 생성한다. (경로 traversal 차단)
   const filename = `${generateToken()}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(dir, { recursive: true });
-
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, filename), buffer);
+  const url = await saveUpload(filename, buffer, file.type);
 
-  return NextResponse.json({ url: `/uploads/${filename}` }, { status: 201 });
+  return NextResponse.json({ url }, { status: 201 });
 }

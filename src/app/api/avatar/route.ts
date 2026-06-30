@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { errorResponse } from "@/lib/api";
 import { generateToken } from "@/lib/utils";
+import { saveUpload } from "@/lib/storage";
 
 // 프로필 사진 업로드. 회원가입(비로그인) 단계에서도 쓰므로 인증을 요구하지 않는다.
 // 남용을 막기 위해 타입/용량을 엄격히 제한한다.
@@ -39,9 +38,8 @@ export async function POST(req: NextRequest) {
   }
 
   const filename = `avatar_${generateToken()}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), Buffer.from(await file.arrayBuffer()));
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const url = await saveUpload(filename, buffer, file.type);
 
-  return NextResponse.json({ url: `/uploads/${filename}` }, { status: 201 });
+  return NextResponse.json({ url }, { status: 201 });
 }

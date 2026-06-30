@@ -10,6 +10,9 @@ import {
 } from "@/lib/utils";
 import { runChapterTranslations } from "@/lib/translation";
 
+// 다국어 번역으로 LLM을 여러 번 호출하므로 함수 실행 시간을 넉넉히 둔다.
+export const maxDuration = 60;
+
 // POST /api/works/[workId]/chapters — 회차 추가 (소유자만)
 export async function POST(
   req: NextRequest,
