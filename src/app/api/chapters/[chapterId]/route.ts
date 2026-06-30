@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
@@ -8,7 +8,10 @@ import {
   isHtmlEmpty,
   isSafeImageUrl,
 } from "@/lib/utils";
-import { runChapterTranslations } from "@/lib/translation";
+import {
+  markChapterTranslationsPending,
+  runChapterTranslations,
+} from "@/lib/translation";
 
 // 회차 + 소유자 확인 헬퍼. 실패 시 error에 응답을 담아 반환한다.
 type ChapterWithWork = NonNullable<
@@ -95,9 +98,14 @@ export async function PATCH(
 
   await db.chapter.update({ where: { id: chapterId }, data });
 
-  // 본문이 바뀌면 모든 대상 언어로 다시 번역한다.
+  // 본문이 바뀌면 모든 대상 언어로 다시 번역한다. (비동기 — 응답 후 백그라운드)
   if (contentChanged) {
-    await runChapterTranslations(chapterId);
+    await markChapterTranslationsPending(chapterId);
+    after(() =>
+      runChapterTranslations(chapterId).catch((e) =>
+        console.error("[translate:bg] chapter edit", e),
+      ),
+    );
   }
 
   return NextResponse.json({ success: true });

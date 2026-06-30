@@ -1,11 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
 import { generatePublicSlug, isSafeImageUrl } from "@/lib/utils";
 import { normalizeLanguages } from "@/lib/lang";
-import { runChapterTranslations } from "@/lib/translation";
+import {
+  markChapterTranslationsPending,
+  runChapterTranslations,
+} from "@/lib/translation";
 import type { WorkDetail } from "@/types";
+
+export const maxDuration = 60;
 
 // GET /api/works/[workId] — 작품 상세 + 회차 목록 (소유자만)
 export async function GET(
@@ -163,10 +168,18 @@ export async function PATCH(
   const updated = await db.work.update({ where: { id: workId }, data });
 
   // 번역 언어 구성이 바뀌면 모든 회차를 다시 번역한다(추가 언어 백필 + 제거 정리).
+  // 비동기: 먼저 pending 표시 후 즉시 응답, 실제 번역은 백그라운드에서.
   if (langChanged) {
     for (const ch of work.chapters) {
-      await runChapterTranslations(ch.id);
+      await markChapterTranslationsPending(ch.id);
     }
+    after(async () => {
+      for (const ch of work.chapters) {
+        await runChapterTranslations(ch.id).catch((e) =>
+          console.error("[translate:bg] work lang change", e),
+        );
+      }
+    });
   }
 
   return NextResponse.json({

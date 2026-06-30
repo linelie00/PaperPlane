@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { withLazyImages } from "@/lib/html";
 import { langLabel } from "@/lib/lang";
+import { TranslationPoller } from "@/components/TranslationPoller";
 import { ChapterActions } from "./ChapterActions";
 
 export default async function ChapterViewPage({
@@ -27,9 +28,15 @@ export default async function ChapterViewPage({
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
   const langs = chapter.work.targetLanguages;
+  // 진행 중인 번역이 있으면 자동 새로고침으로 상태를 갱신한다.
+  const translating = langs.some((l) => {
+    const t = chapter.translations.find((x) => x.language === l);
+    return !t || t.status === "pending" || t.status === "processing";
+  });
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-10">
+      <TranslationPoller active={translating} />
       <Link
         href={`/works/${workId}`}
         className="text-sm font-semibold text-ink-sub hover:text-plane-dark"

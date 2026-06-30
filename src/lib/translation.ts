@@ -50,6 +50,29 @@ async function translateOne(chapter: ChapterWithWork, language: string) {
   }
 }
 
+// 비동기 번역 전, 대상 언어들을 pending 상태로 즉시 표시한다. (LLM 호출 없음)
+// 화면에서 "번역 대기중"이 바로 보이게 하고, 실제 번역은 백그라운드에서 진행한다.
+export async function markChapterTranslationsPending(
+  chapterId: string,
+): Promise<void> {
+  const chapter = await loadChapter(chapterId);
+  if (!chapter) return;
+  const langs = workLanguages(chapter.work);
+  for (const lang of langs) {
+    await db.chapterTranslation.upsert({
+      where: { chapterId_language: { chapterId, language: lang } },
+      create: { chapterId, language: lang, status: "pending" },
+      update: { status: "pending" },
+    });
+  }
+  await db.chapterTranslation.deleteMany({
+    where: {
+      chapterId,
+      language: { notIn: langs.length > 0 ? langs : ["__none__"] },
+    },
+  });
+}
+
 // 회차를 작품의 모든 대상 언어로 번역한다. (대상에서 빠진 언어 번역은 정리)
 export async function runChapterTranslations(chapterId: string): Promise<void> {
   const chapter = await loadChapter(chapterId);

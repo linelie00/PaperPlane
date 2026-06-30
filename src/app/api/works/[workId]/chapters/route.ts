@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
@@ -8,7 +8,10 @@ import {
   isHtmlEmpty,
   isSafeImageUrl,
 } from "@/lib/utils";
-import { runChapterTranslations } from "@/lib/translation";
+import {
+  markChapterTranslationsPending,
+  runChapterTranslations,
+} from "@/lib/translation";
 
 // 다국어 번역으로 LLM을 여러 번 호출하므로 함수 실행 시간을 넉넉히 둔다.
 export const maxDuration = 60;
@@ -70,8 +73,13 @@ export async function POST(
     },
   });
 
-  // 작품의 모든 대상 언어로 번역 생성 (대상 언어가 없으면 건너뜀)
-  await runChapterTranslations(chapter.id);
+  // 번역은 비동기: 먼저 pending으로 표시하고 즉시 응답, 실제 번역은 응답 후 백그라운드에서.
+  await markChapterTranslationsPending(chapter.id);
+  after(() =>
+    runChapterTranslations(chapter.id).catch((e) =>
+      console.error("[translate:bg] chapter create", e),
+    ),
+  );
 
   return NextResponse.json(
     { chapterId: chapter.id, order: chapter.order, isPublic: chapter.isPublic },

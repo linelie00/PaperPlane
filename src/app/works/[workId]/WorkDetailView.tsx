@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
@@ -22,6 +22,18 @@ export function WorkDetailView({
   const [copied, setCopied] = useState(false);
 
   const publicUrl = publicSlug && appUrl ? `${appUrl}/read/${publicSlug}` : "";
+
+  // 진행 중인 번역이 있으면 자동 새로고침으로 상태(번역 N/M)를 갱신한다.
+  const anyTranslating = work.chapters.some((c) =>
+    c.translations.some(
+      (t) => t.status === "pending" || t.status === "processing",
+    ),
+  );
+  useEffect(() => {
+    if (!anyTranslating) return;
+    const id = setInterval(() => router.refresh(), 3000);
+    return () => clearInterval(id);
+  }, [anyTranslating, router]);
 
   async function toggleWorkPublic() {
     setBusy(true);

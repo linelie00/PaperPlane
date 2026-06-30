@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { ApiError, errorResponse } from "@/lib/api";
 import {
+  markChapterTranslationsPending,
   runChapterTranslations,
   runChapterTranslationFor,
 } from "@/lib/translation";
@@ -11,6 +12,7 @@ import {
 export const maxDuration = 60;
 
 // POST /api/translate — 회차 번역 재생성 (소유자만)
+// 비동기: 즉시 pending으로 응답하고 실제 번역은 백그라운드에서 진행한다.
 // language를 주면 해당 언어만, 없으면 작품의 모든 대상 언어를 다시 번역한다.
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -34,14 +36,31 @@ export async function POST(req: NextRequest) {
   if (!chapter) return ApiError.workNotFound();
   if (chapter.work.authorId !== user.userId) return ApiError.forbidden();
 
-  if (body.language) {
-    await runChapterTranslationFor(chapter.id, body.language);
+  const chapterId = chapter.id;
+  const language = body.language;
+
+  if (language) {
+    await db.chapterTranslation.upsert({
+      where: { chapterId_language: { chapterId, language } },
+      create: { chapterId, language, status: "pending" },
+      update: { status: "pending" },
+    });
+    after(() =>
+      runChapterTranslationFor(chapterId, language).catch((e) =>
+        console.error("[translate:bg] one", e),
+      ),
+    );
   } else {
-    await runChapterTranslations(chapter.id);
+    await markChapterTranslationsPending(chapterId);
+    after(() =>
+      runChapterTranslations(chapterId).catch((e) =>
+        console.error("[translate:bg] all", e),
+      ),
+    );
   }
 
   const translations = await db.chapterTranslation.findMany({
-    where: { chapterId: chapter.id },
+    where: { chapterId },
     select: { language: true, status: true, text: true },
   });
 
