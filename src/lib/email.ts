@@ -1,12 +1,13 @@
-// 이메일 발송 래퍼 (Resend 무료 티어). 외부 SDK 없이 REST API를 fetch로 호출한다.
-// API Key는 서버 환경변수에만 보관한다. (CLAUDE.md)
+// 이메일 발송 래퍼. 설정에 따라 두 방식 중 하나를 쓴다.
+//   - SMTP(예: Gmail): SMTP_HOST/SMTP_USER/SMTP_PASS가 있으면 nodemailer로 발송.
+//   - Resend: SMTP가 없고 RESEND_API_KEY가 있으면 REST API로 발송.
+// 비밀번호/키는 서버 환경변수에만 보관한다. (CLAUDE.md)
+import nodemailer from "nodemailer";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
-function getConfig() {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "PaperPlane <onboarding@resend.dev>";
-  return { apiKey, from };
+function getFrom() {
+  return process.env.EMAIL_FROM || "PaperPlane <onboarding@resend.dev>";
 }
 
 type SendParams = {
@@ -17,11 +18,26 @@ type SendParams = {
 
 // 메일을 발송한다. 실패 시 예외를 던지며, 호출 측에서 처리한다.
 export async function sendEmail({ to, subject, html }: SendParams): Promise<void> {
-  const { apiKey, from } = getConfig();
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY 환경변수가 설정되지 않았습니다.");
+  const from = getFrom();
+
+  // 1) SMTP (Gmail 등) — 앱 비밀번호 사용. 누구에게나 발송 가능.
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    const port = Number(process.env.SMTP_PORT ?? 465);
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port,
+      secure: port === 465, // 465=SSL, 587=STARTTLS
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await transporter.sendMail({ from, to, subject, html });
+    return;
   }
 
+  // 2) Resend (REST)
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("메일 발송 설정이 없습니다. SMTP_* 또는 RESEND_API_KEY를 설정하세요.");
+  }
   const res = await fetch(RESEND_ENDPOINT, {
     method: "POST",
     headers: {
@@ -30,7 +46,6 @@ export async function sendEmail({ to, subject, html }: SendParams): Promise<void
     },
     body: JSON.stringify({ from, to, subject, html }),
   });
-
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(`메일 발송 실패 (${res.status}): ${detail.slice(0, 200)}`);
@@ -47,7 +62,7 @@ export async function sendVerificationEmail(
     <h1 style="font-size: 22px; font-weight: 800; margin: 0 0 8px;">PaperPlane 이메일 인증</h1>
     <p style="font-size: 15px; line-height: 1.6; color: #4b5563;">
       가입을 완료하려면 아래 버튼을 눌러 이메일을 인증해주세요.<br/>
-      언어가 달라져도, 이야기가 주는 설렘은 같아야 합니다. ✈
+      작품은 끝나도, 팬심은 이어지니까. ✈
     </p>
     <a href="${verifyLink}"
        style="display: inline-block; margin: 24px 0; padding: 14px 28px; border-radius: 9999px; background: linear-gradient(90deg, #22C7C7, #38BDF8); color: #ffffff; font-weight: 700; text-decoration: none;">
