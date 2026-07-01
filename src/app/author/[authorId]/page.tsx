@@ -3,11 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { Avatar } from "@/components/ui/Avatar";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { SubscribeButton } from "@/components/SubscribeButton";
 import { HeartButton } from "@/components/HeartButton";
-import { AuthorSnsLinks } from "@/components/AuthorSnsLinks";
+import { AuthorHomeProfile } from "@/components/AuthorHomeProfile";
 import { absoluteUrl, plainExcerpt } from "@/lib/meta";
 
 const LANG_LABEL: Record<string, string> = {
@@ -132,40 +131,19 @@ export default async function AuthorHomePage({
 
   return (
     <main className="min-h-screen">
-      {/* 배경 사진 */}
-      <div className="relative z-0 h-44 w-full bg-gradient-to-br from-sky-pale to-plane-light/40 sm:h-56">
-        {author.coverImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={author.coverImage}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        )}
-      </div>
-
-      <div className="mx-auto max-w-4xl px-5">
-        {/* 프로필 헤더 (배경 배너 위로 올라오도록 z-10) */}
-        <div className="relative z-10 -mt-12 flex flex-col items-center text-center sm:-mt-14">
-          <Avatar
-            src={author.image}
-            name={author.nickname}
-            size={96}
-            className="border-4 border-white shadow-card"
-          />
-          <h1 className="mt-3 text-2xl font-extrabold text-ink-main">
-            {author.nickname}
-          </h1>
-          {author.bio && (
-            <p className="mt-2 max-w-xl text-sm text-ink-sub">{author.bio}</p>
-          )}
-          <p className="mt-2 text-sm text-ink-muted">
-            공개 작품 {works.length} · 구독자 {author._count.subscribers}
-          </p>
-
-          {/* 구독 / 하트 (본인 홈에는 표시하지 않음) */}
-          {!isSelf && (
-            <div className="mt-4 flex items-center gap-2">
+      <AuthorHomeProfile
+        authorId={author.id}
+        nickname={author.nickname}
+        image={author.image}
+        coverImage={author.coverImage}
+        bio={author.bio}
+        links={author.links}
+        worksCount={works.length}
+        subscriberCount={author._count.subscribers}
+        editable={isSelf}
+        actions={
+          !isSelf ? (
+            <>
               <SubscribeButton
                 authorId={author.id}
                 initialSubscribed={!!mySub}
@@ -181,17 +159,12 @@ export default async function AuthorHomePage({
                 isLoggedIn={!!currentUser}
                 loginNext={loginNext}
               />
-            </div>
-          )}
+            </>
+          ) : null
+        }
+      />
 
-          {/* 작가 SNS */}
-          {author.links.length > 0 && (
-            <div className="mt-4">
-              <AuthorSnsLinks links={author.links} />
-            </div>
-          )}
-        </div>
-
+      <div className="mx-auto max-w-4xl px-5">
         {/* 공개 작품 목록 */}
         <section className="mt-10 pb-16">
           <h2 className="text-lg font-extrabold text-ink-main">공개 작품</h2>
