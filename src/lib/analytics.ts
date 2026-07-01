@@ -16,23 +16,45 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
-  const [totalViews, todayViews, totalComments, viewLogs, recentComments] =
-    await Promise.all([
-      db.viewLog.count({ where: { workId: { in: workIds } } }),
-      db.viewLog.count({
-        where: { workId: { in: workIds }, createdAt: { gte: startOfToday } },
-      }),
-      db.comment.count({ where: { workId: { in: workIds } } }),
-      db.viewLog.findMany({
-        where: { workId: { in: workIds } },
-        select: { referrer: true, utmSource: true },
-      }),
-      db.comment.findMany({
-        where: { workId: { in: workIds } },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
-    ]);
+  const [
+    totalViews,
+    todayViews,
+    totalComments,
+    viewLogs,
+    recentComments,
+    myLinks,
+  ] = await Promise.all([
+    db.viewLog.count({ where: { workId: { in: workIds } } }),
+    db.viewLog.count({
+      where: { workId: { in: workIds }, createdAt: { gte: startOfToday } },
+    }),
+    db.comment.count({ where: { workId: { in: workIds } } }),
+    db.viewLog.findMany({
+      where: { workId: { in: workIds } },
+      select: { referrer: true, utmSource: true },
+    }),
+    db.comment.findMany({
+      where: { workId: { in: workIds } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
+    db.authorLink.findMany({
+      where: { userId },
+      orderBy: { order: "asc" },
+      select: {
+        platform: true,
+        url: true,
+        _count: { select: { clicks: true } },
+      },
+    }),
+  ]);
+
+  const snsClicks = myLinks.map((l) => ({
+    platform: l.platform,
+    url: l.url,
+    clicks: l._count.clicks,
+  }));
+  const totalSnsClicks = snsClicks.reduce((n, l) => n + l.clicks, 0);
 
   // 주요 유입 경로 집계 (utmSource 우선, 없으면 referrer 호스트)
   const referrerCounts = new Map<string, number>();
@@ -74,5 +96,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       content: c.content,
       createdAt: c.createdAt.toISOString(),
     })),
+    snsClicks,
+    totalSnsClicks,
   };
 }
