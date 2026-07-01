@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import { AuthorBadge } from "@/components/AuthorBadge";
 import { CoverImage } from "@/components/ui/CoverImage";
+import { HeartButton } from "@/components/HeartButton";
 import { absoluteUrl, firstImageSrc, plainExcerpt } from "@/lib/meta";
 
 const LANG_LABEL: Record<string, string> = {
@@ -94,6 +96,7 @@ export default async function ReaderListPage({
           _count: { select: { comments: true } },
         },
       },
+      _count: { select: { hearts: true } },
     },
   });
 
@@ -103,6 +106,17 @@ export default async function ReaderListPage({
   if (!work.isPublic || work.chapters.length === 0) {
     return <AccessDenied message="아직 공개된 회차가 없는 작품입니다." />;
   }
+
+  const currentUser = await getCurrentUser();
+  const loginNext = `/read/${publicSlug}`;
+  const myHeart = currentUser
+    ? await db.workHeart.findUnique({
+        where: {
+          userId_workId: { userId: currentUser.userId, workId: work.id },
+        },
+        select: { id: true },
+      })
+    : null;
 
   return (
     <main className="mx-auto max-w-[760px] px-5 py-12">
@@ -128,11 +142,19 @@ export default async function ReaderListPage({
         {work.title}
       </h1>
       {work.description && <p className="mt-3 text-ink-sub">{work.description}</p>}
-      <div className="mt-3">
+      <div className="mt-3 flex items-center justify-between gap-3">
         <AuthorBadge
           authorId={work.author.id}
           nickname={work.author.nickname}
           image={work.author.image}
+        />
+        <HeartButton
+          targetType="work"
+          targetId={work.id}
+          initialHearted={!!myHeart}
+          initialCount={work._count.hearts}
+          isLoggedIn={!!currentUser}
+          loginNext={loginNext}
         />
       </div>
 
