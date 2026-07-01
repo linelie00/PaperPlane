@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/Card";
@@ -30,12 +31,115 @@ export default async function AdminPage() {
 
         <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <SummaryCard label="전체 사용자" value={stats.totalUsers} />
+          <SummaryCard label="신규 가입(7일)" value={stats.newUsers7d} />
           <SummaryCard label="전체 작품" value={stats.totalWorks} />
           <SummaryCard label="전체 조회수" value={stats.totalViews} />
+          <SummaryCard label="전체 댓글" value={stats.totalComments} />
           <SummaryCard label="구독 수" value={stats.totalSubscriptions} />
           <SummaryCard label="하트 수" value={stats.totalHearts} />
           <SummaryCard label="SNS 클릭 수" value={stats.totalLinkClicks} />
           <SummaryCard label="SNS 클릭률" value={`${clickRate}%`} />
+        </div>
+
+        {/* 창작자별 리더보드 */}
+        <Card className="mt-8">
+          <h2 className="text-lg font-bold text-ink-main">창작자 리더보드 (조회순)</h2>
+          {stats.creators.length === 0 ? (
+            <p className="mt-4 text-sm text-ink-muted">창작자가 없습니다.</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto rounded-2xl border border-paper-border">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-sky-pale text-ink-sub">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">작가</th>
+                    <th className="px-4 py-3 font-semibold">작품</th>
+                    <th className="px-4 py-3 font-semibold">조회</th>
+                    <th className="px-4 py-3 font-semibold">구독자</th>
+                    <th className="px-4 py-3 font-semibold">하트</th>
+                    <th className="px-4 py-3 font-semibold">댓글</th>
+                    <th className="px-4 py-3 font-semibold">SNS 클릭</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.creators.map((c) => (
+                    <tr key={c.authorId} className="border-t border-paper-border">
+                      <td className="px-4 py-3 font-semibold text-ink-main">
+                        {c.nickname}
+                      </td>
+                      <td className="px-4 py-3 text-ink-sub">{c.workCount}</td>
+                      <td className="px-4 py-3 text-ink-sub">{c.viewCount}</td>
+                      <td className="px-4 py-3 text-ink-sub">{c.subscriberCount}</td>
+                      <td className="px-4 py-3 text-ink-sub">{c.heartCount}</td>
+                      <td className="px-4 py-3 text-ink-sub">{c.commentCount}</td>
+                      <td className="px-4 py-3 font-bold text-ink-main">{c.snsClicks}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          {/* 인기 작품 랭킹 */}
+          <Card>
+            <h2 className="text-lg font-bold text-ink-main">인기 작품 (조회순)</h2>
+            {stats.topWorks.length === 0 ? (
+              <p className="mt-4 text-sm text-ink-muted">작품이 없습니다.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {stats.topWorks.map((w, i) => (
+                  <li
+                    key={w.workId}
+                    className="flex items-center justify-between gap-2 text-sm"
+                  >
+                    <span className="min-w-0 truncate text-ink-sub">
+                      <span className="mr-2 font-bold text-ink-muted">{i + 1}</span>
+                      {w.publicSlug ? (
+                        <Link
+                          href={`/read/${w.publicSlug}`}
+                          className="font-semibold text-ink-main hover:text-plane-dark"
+                        >
+                          {w.title}
+                        </Link>
+                      ) : (
+                        <span className="font-semibold text-ink-main">{w.title}</span>
+                      )}
+                      <span className="ml-1 text-ink-muted">· {w.authorNickname}</span>
+                    </span>
+                    <span className="shrink-0 text-ink-muted">
+                      조회 {w.viewCount} · ❤️ {w.heartCount} · 💬 {w.commentCount}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          {/* 활발한 독자 */}
+          <Card>
+            <h2 className="text-lg font-bold text-ink-main">활발한 독자</h2>
+            {stats.topReaders.length === 0 ? (
+              <p className="mt-4 text-sm text-ink-muted">독자 활동이 없습니다.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {stats.topReaders.map((r, i) => (
+                  <li
+                    key={r.userId}
+                    className="flex items-center justify-between gap-2 text-sm"
+                  >
+                    <span className="truncate text-ink-main">
+                      <span className="mr-2 font-bold text-ink-muted">{i + 1}</span>
+                      {r.nickname}
+                    </span>
+                    <span className="shrink-0 text-ink-muted">
+                      구독 {r.subscriptions} · ❤️ {r.hearts} · 💬 {r.comments}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">

@@ -78,9 +78,11 @@ export type AdminStats = {
   totalUsers: number;
   totalWorks: number;
   totalViews: number;
+  totalComments: number;
   totalSubscriptions: number;
   totalHearts: number;
   totalLinkClicks: number;
+  newUsers7d: number; // 최근 7일 신규 가입
   // 플랫폼별 클릭률(클릭 / 노출 조회수 근사)
   platforms: { platform: string; clicks: number }[];
   // 링크별 상위 클릭
@@ -90,6 +92,36 @@ export type AdminStats = {
     url: string;
     authorNickname: string;
     clicks: number;
+  }[];
+  // 창작자별 요약 리더보드 (조회순)
+  creators: {
+    authorId: string;
+    nickname: string;
+    workCount: number;
+    viewCount: number;
+    subscriberCount: number;
+    heartCount: number; // 작가 하트 + 작품 하트
+    commentCount: number;
+    snsClicks: number;
+  }[];
+  // 인기 작품 랭킹 (조회순)
+  topWorks: {
+    workId: string;
+    title: string;
+    publicSlug: string | null;
+    authorNickname: string;
+    viewCount: number;
+    heartCount: number;
+    commentCount: number;
+  }[];
+  // 활발한 독자 (구독+하트+댓글 활동순)
+  topReaders: {
+    userId: string;
+    nickname: string;
+    subscriptions: number;
+    hearts: number; // 준 하트(작가+작품)
+    comments: number;
+    activity: number; // 합계
   }[];
 };
 
