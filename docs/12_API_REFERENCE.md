@@ -37,6 +37,21 @@ state 검증 → 토큰 교환 → 프로필 조회 → 계정 찾기/연결/생
 body `{ nickname?, image?, coverImage?, bio? }`. 이미지/배경은 URL 또는 null(제거).
 수정 후 세션 재발급(닉네임/이미지 최신화).
 
+### PUT `/api/profile/links` (인증)
+작가 SNS 링크 **전체 교체**. body `{ links: [{ platform, url }] }`. url은 http(s)만, 최대 8개.
+응답 `{ success, links: [{ id, platform, url }] }`.
+
+## 구독 / 하트 / SNS 클릭
+
+### POST · DELETE `/api/subscriptions` (인증)
+작가 구독/해제. body `{ authorId }`. 자기 자신 금지. 멱등. 응답 `{ subscribed, count }`.
+
+### POST · DELETE `/api/hearts` (인증)
+작가/작품 하트 토글. body `{ targetType: "author"|"work", targetId }`. 멱등. 응답 `{ hearted, count }`.
+
+### GET `/api/links/[linkId]/go` (공개)
+SNS 링크 클릭 기록(`LinkClick`) 후 실제 URL로 302 리다이렉트. 앵커 href로 사용.
+
 ## 작품 (Works)
 
 ### POST `/api/works` (인증)
@@ -82,15 +97,16 @@ body `{ nickname?, image?, coverImage?, bio? }`. 이미지/배경은 URL 또는 
 
 ## 댓글 (Comments)
 
-### POST `/api/comments` (공개)
-회차 댓글/답글 작성. body `{ chapterId, parentId?, nickname, content, deletePassword? }`.
-공개된 회차에만 가능. `deletePassword`는 숫자 4자리(선택). 답글은 1단계.
+### POST `/api/comments` (**인증 필수**)
+회차 댓글/답글 작성. body `{ chapterId, parentId?, content }`. 닉네임은 세션에서 자동(스냅샷 저장),
+`userId` 연동. 공개된 회차에만 가능. 답글은 1단계. 비로그인 → 401.
 
 ### GET `/api/comments?chapterId=...` (공개)
-회차 댓글(답글 중첩) 조회.
+회차 댓글(답글 중첩) 조회. 각 댓글에 `userId`·작성자 `authorImage` 포함.
 
 ### DELETE `/api/comments/[commentId]`
-삭제. 작품 소유자는 인증만으로, 익명은 body `{ password }`로 본인 댓글 삭제. 부모 삭제 시 답글 cascade.
+삭제. **작품 소유자 또는 댓글 작성자 본인**(userId 일치)은 인증만으로.
+(레거시) 익명 댓글은 body `{ password }`로 삭제. 부모 삭제 시 답글 cascade.
 
 ## 이미지 업로드
 
@@ -104,7 +120,13 @@ body `{ nickname?, image?, coverImage?, bio? }`. 이미지/배경은 URL 또는 
 ## 분석 (Analytics)
 
 ### GET `/api/analytics/dashboard` (인증)
-대시보드 통계(총 조회/오늘/댓글/공개 작품, 작품별 카운트, 유입 경로, 최근 댓글).
+대시보드 통계(총 조회/오늘/댓글/공개 작품, 작품별 카운트, 유입 경로, 최근 댓글, 내 SNS 클릭 요약).
+
+## 관리자 (개발자)
+
+### `/admin` (페이지, `ADMIN_EMAILS` 게이팅)
+API가 아닌 서버 페이지. `ADMIN_EMAILS`(콤마 구분) 미포함 계정은 `notFound()`.
+전역 지표(사용자/작품/조회/구독/하트/SNS 클릭수·클릭률), 상위 SNS 링크, 플랫폼별 클릭 집계.
 
 ### POST `/api/analytics/view` (공개)
 조회 기록(보조). 독자 회차 페이지는 서버에서 직접 ViewLog를 남김.

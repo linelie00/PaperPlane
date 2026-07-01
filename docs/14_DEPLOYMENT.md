@@ -10,6 +10,7 @@
 | `DIRECT_URL` | 마이그레이션/`db push` | Neon **직접** URL(풀러 없음). 로컬은 `DATABASE_URL`과 동일 가능 |
 | `AUTH_SECRET` | JWT 서명·IP/비번 해시 솔트 | 긴 랜덤 문자열 |
 | `NEXT_PUBLIC_APP_URL` | 절대 URL 기준 | 배포 도메인(끝 슬래시 X). 이메일 링크·OAuth·OG에 사용 |
+| `ADMIN_EMAILS` | `/admin` 접근 허용 | 콤마 구분 이메일 목록. 비우면 아무도 접근 불가 |
 | `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` | 번역 LLM | 기본 Upstage Solar |
 | `BLOB_READ_WRITE_TOKEN` | 이미지 저장(Blob) | Blob 스토어 연결 시 자동 주입. 없으면 로컬 디스크 |
 | **이메일 — (A) SMTP** | | 셋 다 있으면 SMTP 사용(우선) |
