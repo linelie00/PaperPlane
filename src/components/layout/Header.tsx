@@ -24,6 +24,12 @@ export function Header({ nickname, image }: HeaderProps) {
           {nickname ? (
             <>
               <Link
+                href="/feed"
+                className="hidden text-sm font-semibold text-ink-sub transition hover:text-plane-dark sm:block"
+              >
+                피드
+              </Link>
+              <Link
                 href="/dashboard"
                 className="hidden text-sm font-semibold text-ink-sub transition hover:text-plane-dark sm:block"
               >

@@ -1,17 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { Field, Input, Textarea } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Input";
+import { Avatar } from "@/components/ui/Avatar";
 import { MAX_COMMENT_LENGTH } from "@/lib/utils";
 import type { CommentItem } from "@/types";
+
+type CurrentUser = {
+  userId: string;
+  nickname: string;
+  image: string | null;
+} | null;
 
 export function CommentSection({
   chapterId,
   initialComments,
+  currentUser,
 }: {
   chapterId: string;
   initialComments: CommentItem[];
+  currentUser: CurrentUser;
 }) {
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
 
@@ -39,7 +50,15 @@ export function CommentSection({
     <section className="mt-12">
       <h2 className="text-lg font-bold text-ink-main">댓글 {total}</h2>
 
-      <CommentForm chapterId={chapterId} onCreated={addComment} />
+      {currentUser ? (
+        <CommentForm
+          chapterId={chapterId}
+          currentUser={currentUser}
+          onCreated={addComment}
+        />
+      ) : (
+        <LoginPrompt />
+      )}
 
       {comments.length > 0 && (
         <ul className="mt-6 space-y-5">
@@ -48,24 +67,35 @@ export function CommentSection({
               key={c.id}
               className="border-b border-paper-border pb-5 last:border-0"
             >
-              <CommentRow comment={c} onDeleted={removeComment} />
+              <CommentRow
+                comment={c}
+                currentUser={currentUser}
+                onDeleted={removeComment}
+              />
 
               {/* 답글 */}
               {c.replies.length > 0 && (
                 <ul className="mt-3 space-y-3 border-l-2 border-sky-pale pl-4">
                   {c.replies.map((r) => (
                     <li key={r.id}>
-                      <CommentRow comment={r} onDeleted={removeComment} />
+                      <CommentRow
+                        comment={r}
+                        currentUser={currentUser}
+                        onDeleted={removeComment}
+                      />
                     </li>
                   ))}
                 </ul>
               )}
 
-              <ReplyToggle
-                chapterId={chapterId}
-                parentId={c.id}
-                onCreated={(reply) => addReply(c.id, reply)}
-              />
+              {currentUser && (
+                <ReplyToggle
+                  chapterId={chapterId}
+                  parentId={c.id}
+                  currentUser={currentUser}
+                  onCreated={(reply) => addReply(c.id, reply)}
+                />
+              )}
             </li>
           ))}
         </ul>
@@ -74,21 +104,49 @@ export function CommentSection({
   );
 }
 
+// 비로그인 상태 안내
+function LoginPrompt() {
+  const pathname = usePathname();
+  return (
+    <div className="mt-4 flex flex-col items-center gap-3 rounded-3xl border border-paper-border bg-white p-6 text-center shadow-card">
+      <p className="text-sm text-ink-sub">
+        댓글을 남기려면 로그인이 필요해요.
+      </p>
+      <Link
+        href={`/login?next=${encodeURIComponent(pathname)}`}
+        className="rounded-full bg-gradient-to-r from-plane-primary to-sky px-5 py-2.5 text-sm font-bold text-white shadow-plane transition hover:-translate-y-0.5"
+      >
+        로그인하고 댓글 쓰기
+      </Link>
+    </div>
+  );
+}
+
 // 단일 댓글/답글 행 (작성자·내용·삭제)
 function CommentRow({
   comment,
+  currentUser,
   onDeleted,
 }: {
   comment: CommentItem;
+  currentUser: CurrentUser;
   onDeleted: (id: string) => void;
 }) {
   const [deleting, setDeleting] = useState(false);
 
+  // 삭제 가능: 본인 계정 댓글이거나, (레거시) 비밀번호가 걸린 익명 댓글
+  const isMine =
+    !!currentUser &&
+    comment.userId !== null &&
+    comment.userId === currentUser.userId;
+  const canDelete = isMine || comment.hasPassword;
+
   async function handleDelete() {
-    const password = comment.hasPassword
-      ? prompt("댓글 삭제 비밀번호(숫자 4자리)를 입력하세요.")
-      : "";
-    if (comment.hasPassword && !password) return;
+    const password =
+      !isMine && comment.hasPassword
+        ? prompt("댓글 삭제 비밀번호(숫자 4자리)를 입력하세요.")
+        : "";
+    if (!isMine && comment.hasPassword && !password) return;
 
     setDeleting(true);
     const res = await fetch(`/api/comments/${comment.id}`, {
@@ -108,12 +166,15 @@ function CommentRow({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <span className="font-semibold text-ink-main">{comment.nickname}</span>
+        <span className="flex items-center gap-2 font-semibold text-ink-main">
+          <Avatar src={comment.authorImage} name={comment.nickname} size={24} />
+          {comment.nickname}
+        </span>
         <div className="flex items-center gap-3">
           <span className="text-xs text-ink-muted">
             {comment.createdAt.slice(0, 10)}
           </span>
-          {comment.hasPassword && (
+          {canDelete && (
             <button
               onClick={handleDelete}
               disabled={deleting}
@@ -133,10 +194,12 @@ function CommentRow({
 function ReplyToggle({
   chapterId,
   parentId,
+  currentUser,
   onCreated,
 }: {
   chapterId: string;
   parentId: string;
+  currentUser: NonNullable<CurrentUser>;
   onCreated: (c: CommentItem) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -157,6 +220,7 @@ function ReplyToggle({
       <CommentForm
         chapterId={chapterId}
         parentId={parentId}
+        currentUser={currentUser}
         compact
         onCreated={(c) => {
           onCreated(c);
@@ -168,35 +232,31 @@ function ReplyToggle({
   );
 }
 
-// 댓글/답글 작성 폼
+// 댓글/답글 작성 폼 (로그인 사용자)
 function CommentForm({
   chapterId,
   parentId,
+  currentUser,
   compact,
   onCreated,
   onCancel,
 }: {
   chapterId: string;
   parentId?: string;
+  currentUser: NonNullable<CurrentUser>;
   compact?: boolean;
   onCreated: (c: CommentItem) => void;
   onCancel?: () => void;
 }) {
-  const [nickname, setNickname] = useState("");
   const [content, setContent] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!nickname.trim() || !content.trim()) {
-      setError("닉네임과 내용을 입력해주세요.");
-      return;
-    }
-    if (password && !/^\d{4}$/.test(password)) {
-      setError("삭제 비밀번호는 숫자 4자리여야 합니다.");
+    if (!content.trim()) {
+      setError("내용을 입력해주세요.");
       return;
     }
 
@@ -204,29 +264,23 @@ function CommentForm({
     const res = await fetch("/api/comments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chapterId,
-        parentId,
-        nickname,
-        content,
-        deletePassword: password || undefined,
-      }),
+      body: JSON.stringify({ chapterId, parentId, content }),
     });
 
     if (res.ok) {
       const data = await res.json();
       onCreated({
         id: data.commentId,
-        nickname: nickname.trim(),
+        nickname: currentUser.nickname,
         content: content.trim(),
         createdAt: new Date().toISOString(),
         parentId: parentId ?? null,
-        hasPassword: !!password,
+        userId: currentUser.userId,
+        authorImage: currentUser.image,
+        hasPassword: false,
         replies: [],
       });
       setContent("");
-      setPassword("");
-      if (!parentId) setNickname("");
     } else {
       const data = await res.json().catch(() => null);
       setError(data?.error?.message ?? "작성에 실패했습니다.");
@@ -243,21 +297,12 @@ function CommentForm({
           : "mt-4 flex flex-col gap-3 rounded-3xl border border-paper-border bg-white p-5 shadow-card"
       }
     >
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Input
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          placeholder="닉네임"
-          maxLength={40}
-        />
-        <Input
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="삭제 비밀번호(숫자 4자리, 선택)"
-          inputMode="numeric"
-          maxLength={4}
-        />
-      </div>
+      {!compact && (
+        <div className="flex items-center gap-2 text-sm font-semibold text-ink-main">
+          <Avatar src={currentUser.image} name={currentUser.nickname} size={28} />
+          {currentUser.nickname} 님
+        </div>
+      )}
       <Textarea
         rows={compact ? 2 : 3}
         value={content}

@@ -19,7 +19,9 @@
 | emailVerified | DateTime? | null = 미인증 |
 | createdAt/updatedAt | DateTime | |
 
-관계: `works Work[]`, `accounts OAuthAccount[]`, `verificationTokens EmailVerificationToken[]`
+관계: `works Work[]`, `accounts OAuthAccount[]`, `verificationTokens EmailVerificationToken[]`,
+`comments Comment[]`, `links AuthorLink[]`, `subscriptions`/`subscribers Subscription[]`,
+`authorHearts`/`authorHeartsReceived AuthorHeart[]`, `workHearts WorkHeart[]`
 
 ## OAuthAccount
 소셜 로그인 계정 연결. `provider`("google"|"kakao"|"naver") + `providerAccountId`.
@@ -86,13 +88,26 @@
 | workId | String | → Work |
 | chapterId | String? | → Chapter (회차별 댓글; null=레거시) |
 | parentId | String? | 답글이면 부모 댓글 id(1단계) |
-| nickname | String | 익명 닉네임 |
+| userId | String? | **로그인 작성자**(null=레거시 익명). 삭제 시 SetNull |
+| nickname | String | 표시용 닉네임 스냅샷(로그인 시 세션 닉네임) |
 | content | String | sanitize(태그 제거) |
-| deletePasswordHash | String? | 익명 본인 삭제용(숫자 4자리 해시) |
+| deletePasswordHash | String? | (레거시) 익명 본인 삭제용 4자리 해시 — 신규 미사용 |
 | createdAt | DateTime | |
 
-`@@index([workId])`, `@@index([chapterId])`, `@@index([parentId])`
-관계: `work`, `chapter Chapter?`, `parent/replies`(self-relation, cascade)
+`@@index([workId])`, `@@index([chapterId])`, `@@index([parentId])`, `@@index([userId])`
+관계: `work`, `chapter Chapter?`, `parent/replies`(self-relation, cascade), `user User?`
+**작성은 로그인 필수**(POST 401). 삭제는 작품 소유자 또는 댓글 작성자 본인.
+
+## Subscription / AuthorHeart / WorkHeart (독자 반응)
+- **Subscription**: `subscriberId`+`authorId`, `@@unique([subscriberId, authorId])`, `@@index([authorId])`. 독자→작가 팔로우(피드 반영).
+- **AuthorHeart**: `userId`+`authorId`, `@@unique([userId, authorId])`. 작가 홈 하트(구독과 별개).
+- **WorkHeart**: `userId`+`workId`, `@@unique([userId, workId])`. 작품 하트.
+- 모두 cuid id + createdAt, 관계는 User/Work에 cascade.
+
+## AuthorLink / LinkClick (작가 SNS + 클릭 추적)
+- **AuthorLink**: `userId`, `platform`(자유 라벨), `url`(http/https), `order`. `@@index([userId])`. 프로필에서 전체 교체(최대 8).
+- **LinkClick**: `linkId`, `userId?`, `ipHash?`, `referrer?`, `createdAt`. `@@index([linkId])`, `@@index([createdAt])`.
+  `/api/links/[id]/go`가 클릭 기록 후 리다이렉트. 대시보드/관리자 클릭률 지표 원천.
 
 ## ViewLog (조회/유입)
 `workId`, `referrer?`, `utmSource/Medium/Campaign?`, `userAgent?`, `ipHash?`(SHA-256 솔트), `createdAt`.

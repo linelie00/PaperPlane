@@ -20,12 +20,14 @@ export async function DELETE(
     return errorResponse("COMMENT_NOT_FOUND", "댓글을 찾을 수 없습니다.", 404);
   }
 
-  // 1) 창작자 인증
+  // 1) 작품 창작자 또는 댓글 작성자 본인
   const user = await getCurrentUser();
-  const isOwner = user && user.userId === comment.work.authorId;
+  const isWorkOwner = user && user.userId === comment.work.authorId;
+  const isCommentAuthor =
+    user && comment.userId !== null && user.userId === comment.userId;
 
-  if (!isOwner) {
-    // 2) 익명 작성자: 삭제 비밀번호 확인
+  if (!isWorkOwner && !isCommentAuthor) {
+    // 2) (레거시) 익명 작성자: 삭제 비밀번호 확인
     let password = "";
     try {
       const body = (await req.json()) as { password?: string };

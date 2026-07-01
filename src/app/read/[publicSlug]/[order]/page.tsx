@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import { getClientIp, hashIp } from "@/lib/utils";
 import { getChapterCommentTree } from "@/lib/comments";
 import { withLazyImages } from "@/lib/html";
@@ -10,6 +11,7 @@ import { absoluteUrl, firstImageSrc, plainExcerpt } from "@/lib/meta";
 import { CommentSection } from "../CommentSection";
 import { ChapterContent } from "../ChapterContent";
 import { AuthorBadge } from "@/components/AuthorBadge";
+import { AuthorSnsLinks } from "@/components/AuthorSnsLinks";
 import { ShareButton } from "@/components/ShareButton";
 
 // 소셜 공유 미리보기 (회차 단위)
@@ -99,7 +101,17 @@ export default async function ChapterReaderPage({
   const work = await db.work.findUnique({
     where: { publicSlug },
     include: {
-      author: { select: { id: true, nickname: true, image: true } },
+      author: {
+        select: {
+          id: true,
+          nickname: true,
+          image: true,
+          links: {
+            orderBy: { order: "asc" },
+            select: { id: true, platform: true, url: true },
+          },
+        },
+      },
       chapters: {
         where: { isPublic: true },
         orderBy: { order: "asc" },
@@ -127,6 +139,7 @@ export default async function ChapterReaderPage({
   const next = publicChapters[idx + 1];
 
   const comments = await getChapterCommentTree(chapter.id);
+  const currentUser = await getCurrentUser();
 
   // 조회수 1 증가 + 유입 정보 저장 (작품 단위, docs/02_USER_FLOW.md)
   const headerList = await headers();
@@ -215,7 +228,31 @@ export default async function ChapterReaderPage({
         )}
       </nav>
 
-      <CommentSection chapterId={chapter.id} initialComments={comments} />
+      {/* 작품을 다 읽은 뒤 작가 SNS로 이동 (클릭 추적) */}
+      {work.author.links.length > 0 && (
+        <section className="mt-10 rounded-3xl border border-paper-border bg-white p-6 text-center shadow-card">
+          <p className="text-sm font-semibold text-ink-main">
+            {work.author.nickname} 작가를 더 만나보세요
+          </p>
+          <div className="mt-3">
+            <AuthorSnsLinks links={work.author.links} />
+          </div>
+        </section>
+      )}
+
+      <CommentSection
+        chapterId={chapter.id}
+        initialComments={comments}
+        currentUser={
+          currentUser
+            ? {
+                userId: currentUser.userId,
+                nickname: currentUser.nickname,
+                image: currentUser.image,
+              }
+            : null
+        }
+      />
     </main>
   );
 }

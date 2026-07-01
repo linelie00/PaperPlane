@@ -87,6 +87,16 @@ export function isSafeImageUrl(url: string): boolean {
   return /^\/uploads\//.test(url) || /^https?:\/\//i.test(url);
 }
 
+// 외부 링크(SNS 등) URL 허용 여부 — http(s) 절대 URL만 (javascript: 등 차단)
+export function isSafeHttpUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 // 요청 헤더에서 클라이언트 IP를 추출한다.
 export function getClientIp(headers: Headers): string | null {
   const forwarded = headers.get("x-forwarded-for");

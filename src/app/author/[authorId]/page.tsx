@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import { Avatar } from "@/components/ui/Avatar";
 import { CoverImage } from "@/components/ui/CoverImage";
+import { SubscribeButton } from "@/components/SubscribeButton";
+import { HeartButton } from "@/components/HeartButton";
+import { AuthorSnsLinks } from "@/components/AuthorSnsLinks";
 import { absoluteUrl, plainExcerpt } from "@/lib/meta";
 
 const LANG_LABEL: Record<string, string> = {
@@ -62,9 +66,45 @@ export default async function AuthorHomePage({
 
   const author = await db.user.findUnique({
     where: { id: authorId },
-    select: { id: true, nickname: true, image: true, coverImage: true, bio: true },
+    select: {
+      id: true,
+      nickname: true,
+      image: true,
+      coverImage: true,
+      bio: true,
+      links: { orderBy: { order: "asc" }, select: { id: true, platform: true, url: true } },
+      _count: { select: { subscribers: true, authorHeartsReceived: true } },
+    },
   });
   if (!author) notFound();
+
+  const currentUser = await getCurrentUser();
+  const isSelf = currentUser?.userId === author.id;
+  const loginNext = `/author/${author.id}`;
+
+  // 현재 사용자의 구독/하트 상태
+  const [mySub, myHeart] = currentUser
+    ? await Promise.all([
+        db.subscription.findUnique({
+          where: {
+            subscriberId_authorId: {
+              subscriberId: currentUser.userId,
+              authorId: author.id,
+            },
+          },
+          select: { id: true },
+        }),
+        db.authorHeart.findUnique({
+          where: {
+            userId_authorId: {
+              userId: currentUser.userId,
+              authorId: author.id,
+            },
+          },
+          select: { id: true },
+        }),
+      ])
+    : [null, null];
 
   // 공개 작품: isPublic이며 공개·번역완료 회차가 1개 이상
   const works = await db.work.findMany({
@@ -119,7 +159,37 @@ export default async function AuthorHomePage({
           {author.bio && (
             <p className="mt-2 max-w-xl text-sm text-ink-sub">{author.bio}</p>
           )}
-          <p className="mt-2 text-sm text-ink-muted">공개 작품 {works.length}</p>
+          <p className="mt-2 text-sm text-ink-muted">
+            공개 작품 {works.length} · 구독자 {author._count.subscribers}
+          </p>
+
+          {/* 구독 / 하트 (본인 홈에는 표시하지 않음) */}
+          {!isSelf && (
+            <div className="mt-4 flex items-center gap-2">
+              <SubscribeButton
+                authorId={author.id}
+                initialSubscribed={!!mySub}
+                initialCount={author._count.subscribers}
+                isLoggedIn={!!currentUser}
+                loginNext={loginNext}
+              />
+              <HeartButton
+                targetType="author"
+                targetId={author.id}
+                initialHearted={!!myHeart}
+                initialCount={author._count.authorHeartsReceived}
+                isLoggedIn={!!currentUser}
+                loginNext={loginNext}
+              />
+            </div>
+          )}
+
+          {/* 작가 SNS */}
+          {author.links.length > 0 && (
+            <div className="mt-4">
+              <AuthorSnsLinks links={author.links} />
+            </div>
+          )}
         </div>
 
         {/* 공개 작품 목록 */}

@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { errorResponse } from "@/lib/api";
-import {
-  sanitizeText,
-  hashDeletePassword,
-  MAX_COMMENT_LENGTH,
-} from "@/lib/utils";
+import { getCurrentUser } from "@/lib/auth";
+import { ApiError, errorResponse } from "@/lib/api";
+import { sanitizeText, MAX_COMMENT_LENGTH } from "@/lib/utils";
 
-// POST /api/comments — 회차 댓글/답글 작성 (로그인 불필요, 닉네임 기반)
+// POST /api/comments — 회차 댓글/답글 작성 (로그인 필수, 계정 연동)
 export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return ApiError.unauthorized();
+
   let body: {
     chapterId?: string;
     parentId?: string;
-    nickname?: string;
     content?: string;
-    deletePassword?: string;
   };
   try {
     body = await req.json();
@@ -22,14 +20,10 @@ export async function POST(req: NextRequest) {
     return errorResponse("INVALID_PAYLOAD", "잘못된 요청입니다.", 400);
   }
 
-  const nickname = sanitizeText(body.nickname ?? "");
   const content = sanitizeText(body.content ?? "");
 
   if (!body.chapterId) {
     return errorResponse("MISSING_CHAPTER_ID", "chapterId가 필요합니다.", 400);
-  }
-  if (!nickname) {
-    return errorResponse("MISSING_NICKNAME", "닉네임을 입력해주세요.", 400);
   }
   if (!content) {
     return errorResponse("MISSING_CONTENT", "댓글 내용을 입력해주세요.", 400);
@@ -65,27 +59,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 4자리 숫자 삭제 비밀번호(선택)
-  let deletePasswordHash: string | null = null;
-  if (body.deletePassword) {
-    if (!/^\d{4}$/.test(body.deletePassword)) {
-      return errorResponse(
-        "INVALID_PASSWORD",
-        "삭제 비밀번호는 숫자 4자리여야 합니다.",
-        400,
-      );
-    }
-    deletePasswordHash = hashDeletePassword(body.deletePassword);
-  }
-
   const comment = await db.comment.create({
     data: {
       workId: chapter.workId,
       chapterId: chapter.id,
       parentId: body.parentId ?? null,
-      nickname,
+      userId: user.userId,
+      nickname: user.nickname, // 표시용 스냅샷
       content,
-      deletePasswordHash,
     },
   });
 
@@ -102,6 +83,7 @@ export async function GET(req: NextRequest) {
   const comments = await db.comment.findMany({
     where: { chapterId },
     orderBy: { createdAt: "asc" },
+    include: { user: { select: { image: true } } },
   });
 
   // 부모/답글 트리로 구성
@@ -123,6 +105,8 @@ export async function GET(req: NextRequest) {
     content: c.content,
     createdAt: c.createdAt.toISOString(),
     parentId: c.parentId,
+    userId: c.userId,
+    authorImage: c.user?.image ?? null,
     hasPassword: c.deletePasswordHash !== null,
     replies: (byParent.get(c.id) ?? []).map((r) => ({
       id: r.id,
@@ -130,6 +114,8 @@ export async function GET(req: NextRequest) {
       content: r.content,
       createdAt: r.createdAt.toISOString(),
       parentId: r.parentId,
+      userId: r.userId,
+      authorImage: r.user?.image ?? null,
       hasPassword: r.deletePasswordHash !== null,
       replies: [],
     })),

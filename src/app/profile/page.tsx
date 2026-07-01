@@ -17,6 +17,10 @@ export default async function ProfilePage() {
       image: true,
       coverImage: true,
       bio: true,
+      links: {
+        orderBy: { order: "asc" },
+        select: { id: true, platform: true, url: true },
+      },
     },
   });
   if (!user) redirect("/login");
@@ -43,6 +47,7 @@ export default async function ProfilePage() {
           initialImage={user.image}
           initialCoverImage={user.coverImage}
           initialBio={user.bio}
+          initialLinks={user.links}
         />
       </main>
     </>

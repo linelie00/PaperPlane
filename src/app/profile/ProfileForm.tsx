@@ -6,8 +6,12 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/Input";
 import { AvatarPicker } from "@/components/auth/AvatarPicker";
+import type { AuthorLinkItem } from "@/types";
 
 const MAX_BIO = 200;
+const MAX_LINKS = 8;
+
+type LinkDraft = { platform: string; url: string };
 
 export function ProfileForm({
   email,
@@ -15,27 +19,38 @@ export function ProfileForm({
   initialImage,
   initialCoverImage,
   initialBio,
+  initialLinks,
 }: {
   email: string;
   initialNickname: string;
   initialImage: string | null;
   initialCoverImage: string | null;
   initialBio: string | null;
+  initialLinks: AuthorLinkItem[];
 }) {
   const router = useRouter();
   const [nickname, setNickname] = useState(initialNickname);
   const [image, setImage] = useState<string | null>(initialImage);
   const [coverImage, setCoverImage] = useState<string | null>(initialCoverImage);
   const [bio, setBio] = useState(initialBio ?? "");
+  const [links, setLinks] = useState<LinkDraft[]>(
+    initialLinks.map((l) => ({ platform: l.platform, url: l.url })),
+  );
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const initialLinksJson = JSON.stringify(
+    initialLinks.map((l) => ({ platform: l.platform, url: l.url })),
+  );
+  const linksChanged = JSON.stringify(links) !== initialLinksJson;
 
   const changed =
     nickname !== initialNickname ||
     image !== initialImage ||
     coverImage !== initialCoverImage ||
-    bio !== (initialBio ?? "");
+    bio !== (initialBio ?? "") ||
+    linksChanged;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,14 +68,45 @@ export function ProfileForm({
       body: JSON.stringify({ nickname, image, coverImage, bio }),
     });
 
-    if (res.ok) {
-      setSaved(true);
-      router.refresh();
-    } else {
+    if (!res.ok) {
       const data = await res.json().catch(() => null);
       setError(data?.error?.message ?? "저장에 실패했습니다.");
+      setLoading(false);
+      return;
     }
+
+    // SNS 링크는 별도 엔드포인트로 전체 교체
+    if (linksChanged) {
+      const cleaned = links.filter((l) => l.url.trim() !== "");
+      const linkRes = await fetch("/api/profile/links", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ links: cleaned }),
+      });
+      if (!linkRes.ok) {
+        const data = await linkRes.json().catch(() => null);
+        setError(data?.error?.message ?? "SNS 링크 저장에 실패했습니다.");
+        setLoading(false);
+        return;
+      }
+    }
+
+    setSaved(true);
+    router.refresh();
     setLoading(false);
+  }
+
+  function updateLink(i: number, patch: Partial<LinkDraft>) {
+    setLinks((prev) =>
+      prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)),
+    );
+  }
+  function addLink() {
+    if (links.length >= MAX_LINKS) return;
+    setLinks((prev) => [...prev, { platform: "", url: "" }]);
+  }
+  function removeLink(i: number) {
+    setLinks((prev) => prev.filter((_, idx) => idx !== i));
   }
 
   return (
@@ -106,6 +152,56 @@ export function ProfileForm({
         <p className="-mt-2 text-xs text-ink-muted">
           이메일은 변경할 수 없습니다.
         </p>
+      </Card>
+
+      {/* SNS 링크 */}
+      <Card className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-sm font-semibold text-ink-sub">SNS 링크</h2>
+          <p className="mt-1 text-xs text-ink-muted">
+            작가 홈과 회차 끝에 표시돼요. 독자가 눌러 들어간 클릭 수가 집계됩니다.
+          </p>
+        </div>
+
+        {links.length > 0 && (
+          <ul className="flex flex-col gap-2">
+            {links.map((l, i) => (
+              <li key={i} className="flex items-center gap-2">
+                <div className="w-36 shrink-0">
+                  <Input
+                    value={l.platform}
+                    onChange={(e) => updateLink(i, { platform: e.target.value })}
+                    placeholder="플랫폼"
+                    maxLength={30}
+                  />
+                </div>
+                <Input
+                  value={l.url}
+                  onChange={(e) => updateLink(i, { url: e.target.value })}
+                  placeholder="https://..."
+                  inputMode="url"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeLink(i)}
+                  className="shrink-0 rounded-full px-3 py-2 text-sm font-semibold text-ink-sub hover:text-error"
+                >
+                  삭제
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {links.length < MAX_LINKS && (
+          <button
+            type="button"
+            onClick={addLink}
+            className="self-start rounded-full border border-plane-light bg-white px-4 py-1.5 text-sm font-bold text-plane-dark hover:bg-sky-pale"
+          >
+            + 링크 추가
+          </button>
+        )}
       </Card>
 
       {error && <p className="text-sm font-medium text-error">{error}</p>}

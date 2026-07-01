@@ -34,6 +34,14 @@ model User {
   works         Work[]
   accounts      OAuthAccount[]
   verificationTokens EmailVerificationToken[]
+  comments      Comment[] // 로그인 후 작성한 댓글
+  links         AuthorLink[] // 작가 SNS 링크
+  // 구독: subscriptions = 내가 구독한 작가, subscribers = 나를 구독한 독자
+  subscriptions Subscription[] @relation("Subscriber")
+  subscribers   Subscription[] @relation("Author")
+  authorHearts  AuthorHeart[]  @relation("AuthorHeartUser") // 내가 누른 작가 하트
+  authorHeartsReceived AuthorHeart[] @relation("AuthorHeartTarget") // 내가 받은 작가 하트
+  workHearts    WorkHeart[] // 내가 누른 작품 하트
 }
 
 model OAuthAccount {
@@ -78,6 +86,7 @@ model Work {
   chapters       Chapter[]
   comments       Comment[]
   viewLogs       ViewLog[]
+  hearts         WorkHeart[]
 
   @@index([authorId])
 }
@@ -122,18 +131,89 @@ model Comment {
   workId             String
   chapterId          String? // 회차별 댓글 (null = 작품 단위 레거시)
   parentId           String? // 대댓글이면 부모 댓글 id
-  nickname           String
+  userId             String? // 로그인 작성자 (null = 레거시 익명 댓글)
+  nickname           String // 표시용 닉네임 스냅샷 (로그인 시 세션 닉네임)
   content            String
-  deletePasswordHash String? // 익명 작성자가 본인 댓글을 삭제할 때 사용
+  deletePasswordHash String? // (레거시) 익명 작성자 본인 삭제용 — 신규 댓글은 미사용
   createdAt          DateTime  @default(now())
   work               Work      @relation(fields: [workId], references: [id], onDelete: Cascade)
   chapter            Chapter?  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   parent             Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies            Comment[] @relation("CommentReplies")
+  user               User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([workId])
   @@index([chapterId])
   @@index([parentId])
+  @@index([userId])
+}
+
+// 독자 → 작가 구독 (피드 반영). 하트와는 별개.
+model Subscription {
+  id           String   @id @default(cuid())
+  subscriberId String // 구독하는 독자
+  authorId     String // 구독 대상 작가
+  createdAt    DateTime @default(now())
+  subscriber   User     @relation("Subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  author       User     @relation("Author", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, authorId])
+  @@index([authorId])
+}
+
+// 작가 홈 하트 (가벼운 좋아요). 구독과는 별개.
+model AuthorHeart {
+  id        String   @id @default(cuid())
+  userId    String // 하트를 누른 사람
+  authorId  String // 대상 작가
+  createdAt DateTime @default(now())
+  user      User     @relation("AuthorHeartUser", fields: [userId], references: [id], onDelete: Cascade)
+  author    User     @relation("AuthorHeartTarget", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, authorId])
+  @@index([authorId])
+}
+
+// 작품 하트
+model WorkHeart {
+  id        String   @id @default(cuid())
+  userId    String
+  workId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  work      Work     @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workId])
+  @@index([workId])
+}
+
+// 작가 SNS 링크 (프로필에서 관리)
+model AuthorLink {
+  id        String      @id @default(cuid())
+  userId    String
+  platform  String // "twitter" | "instagram" | "youtube" 등 자유 라벨
+  url       String
+  order     Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clicks    LinkClick[]
+
+  @@index([userId])
+}
+
+// SNS 링크 클릭 로그 (서비스 어필용 클릭률 지표)
+model LinkClick {
+  id        String     @id @default(cuid())
+  linkId    String
+  userId    String? // 로그인 상태면 기록 (익명 가능)
+  ipHash    String?
+  referrer  String?
+  createdAt DateTime   @default(now())
+  link      AuthorLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId])
+  @@index([createdAt])
 }
 
 model ViewLog {

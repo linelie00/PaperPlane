@@ -100,6 +100,30 @@ export default async function DashboardPage() {
               )}
             </Card>
 
+            {/* SNS 클릭 요약 */}
+            <Card>
+              <h2 className="text-lg font-bold text-ink-main">
+                SNS 클릭 {stats.totalSnsClicks > 0 && `(${stats.totalSnsClicks})`}
+              </h2>
+              {stats.snsClicks.length === 0 ? (
+                <p className="mt-4 text-sm text-ink-muted">
+                  프로필에서 SNS 링크를 추가하면 클릭 수가 집계돼요.
+                </p>
+              ) : (
+                <ul className="mt-4 space-y-2">
+                  {stats.snsClicks.map((l) => (
+                    <li
+                      key={l.url}
+                      className="flex items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="truncate text-ink-sub">{l.platform}</span>
+                      <span className="font-bold text-ink-main">{l.clicks}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+
             {/* 최근 댓글 */}
             <Card>
               <h2 className="text-lg font-bold text-ink-main">최근 댓글</h2>
