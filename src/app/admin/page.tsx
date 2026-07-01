@@ -21,7 +21,7 @@ export default async function AdminPage() {
 
   return (
     <div className="min-h-screen">
-      <Header nickname={user.nickname} image={user.image} />
+      <Header userId={user.userId} nickname={user.nickname} image={user.image} />
 
       <main className="mx-auto max-w-6xl px-5 py-10">
         <h1 className="text-2xl font-extrabold text-ink-main">개발자 대시보드</h1>

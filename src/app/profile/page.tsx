@@ -27,7 +27,7 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <Header nickname={session.nickname} image={session.image} />
+      <Header userId={session.userId} nickname={session.nickname} image={session.image} />
       <main className="mx-auto max-w-2xl px-5 py-10">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-extrabold text-ink-main">프로필 설정</h1>

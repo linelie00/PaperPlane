@@ -82,6 +82,29 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// 비밀번호 규칙 안내 문구 (폼 placeholder/도움말 공용)
+export const PASSWORD_RULE_HINT = "8자 이상, 영문과 숫자를 포함해주세요.";
+
+// 비밀번호 규칙 검증: 8~72자, 영문·숫자 각각 1자 이상 포함.
+// (bcrypt는 72바이트까지만 반영하므로 상한을 둔다.)
+export function validatePassword(
+  password: string,
+): { ok: true } | { ok: false; message: string } {
+  if (password.length < 8) {
+    return { ok: false, message: "비밀번호는 8자 이상이어야 합니다." };
+  }
+  if (password.length > 72) {
+    return { ok: false, message: "비밀번호는 72자 이하여야 합니다." };
+  }
+  if (!/[A-Za-z]/.test(password)) {
+    return { ok: false, message: "비밀번호에 영문을 포함해주세요." };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { ok: false, message: "비밀번호에 숫자를 포함해주세요." };
+  }
+  return { ok: true };
+}
+
 // 프로필 이미지 URL 허용 여부 (자체 업로드 경로 또는 외부 http(s)만)
 export function isSafeImageUrl(url: string): boolean {
   return /^\/uploads\//.test(url) || /^https?:\/\//i.test(url);

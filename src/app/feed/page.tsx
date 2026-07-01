@@ -16,7 +16,7 @@ export default async function FeedPage() {
 
   return (
     <div className="min-h-screen">
-      <Header nickname={user.nickname} image={user.image} />
+      <Header userId={user.userId} nickname={user.nickname} image={user.image} />
 
       <main className="mx-auto max-w-6xl px-5 py-10">
         <h1 className="text-2xl font-extrabold text-ink-main">피드</h1>

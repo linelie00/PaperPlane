@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
-import { isValidEmail, isSafeImageUrl } from "@/lib/utils";
+import { isValidEmail, isSafeImageUrl, validatePassword } from "@/lib/utils";
 import { issueAndSendVerification } from "@/lib/verification";
 
 // POST /api/auth/signup — 회원가입 (docs/04_API_SPEC.md)
@@ -31,8 +31,9 @@ export async function POST(req: NextRequest) {
   if (!isValidEmail(email)) {
     return errorResponse("INVALID_EMAIL", "이메일 형식이 올바르지 않습니다.", 400);
   }
-  if (password.length < 8) {
-    return errorResponse("WEAK_PASSWORD", "비밀번호는 8자 이상이어야 합니다.", 400);
+  const pwCheck = validatePassword(password);
+  if (!pwCheck.ok) {
+    return errorResponse("WEAK_PASSWORD", pwCheck.message, 400);
   }
 
   const existing = await db.user.findUnique({ where: { email } });
