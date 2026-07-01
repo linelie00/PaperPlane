@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { SocialButtons } from "@/components/auth/SocialButtons";
 import { AvatarPicker } from "@/components/auth/AvatarPicker";
+import { validatePassword, PASSWORD_RULE_HINT } from "@/lib/utils";
 
 export default function SignupPage() {
   const [nickname, setNickname] = useState("");
@@ -28,12 +29,13 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
-    if (password !== passwordConfirm) {
-      setError("비밀번호가 일치하지 않습니다.");
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.ok) {
+      setError(pwCheck.message);
       return;
     }
-    if (password.length < 8) {
-      setError("비밀번호는 8자 이상이어야 합니다.");
+    if (password !== passwordConfirm) {
+      setError("비밀번호가 일치하지 않습니다.");
       return;
     }
 
@@ -148,9 +150,10 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="8자 이상"
+              placeholder={PASSWORD_RULE_HINT}
               required
             />
+            <p className="text-xs text-ink-muted">{PASSWORD_RULE_HINT}</p>
           </Field>
           <Field label="비밀번호 확인" htmlFor="passwordConfirm">
             <Input

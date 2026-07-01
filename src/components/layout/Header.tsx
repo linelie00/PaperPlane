@@ -5,11 +5,12 @@ import { Avatar } from "@/components/ui/Avatar";
 
 type HeaderProps = {
   // 로그인 사용자일 때만 전달
+  userId?: string | null;
   nickname?: string | null;
   image?: string | null;
 };
 
-export function Header({ nickname, image }: HeaderProps) {
+export function Header({ userId, nickname, image }: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-paper-border/60 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
@@ -42,9 +43,9 @@ export function Header({ nickname, image }: HeaderProps) {
                 내 작품
               </Link>
               <Link
-                href="/profile"
+                href={userId ? `/author/${userId}` : "/profile"}
                 className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 transition hover:bg-sky-pale"
-                title="프로필 설정"
+                title="내 작가 홈"
               >
                 <Avatar src={image} name={nickname ?? "?"} size={32} />
                 <span className="hidden text-sm font-semibold text-ink-sub sm:block">

@@ -9,7 +9,7 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen">
-      <Header nickname={user?.nickname} image={user?.image} />
+      <Header userId={user?.userId} nickname={user?.nickname} image={user?.image} />
 
       {/* Hero */}
       <section className="relative overflow-hidden">
